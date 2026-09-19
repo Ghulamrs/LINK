@@ -1,0 +1,11 @@
+; Each line is one link: the image's name | the flags beyond the common ones | the objects.
+; Lines beginning with a semicolon are comments, as for.exe already skips them.
+; The common flags, added by probe.cmd, are: /nologo /subsystem:console /map
+p01-bare|/entry:start /nodefaultlib|p01-bare
+p02-import|/entry:start /nodefaultlib kernel32.lib|p02-import
+p03-imports|/entry:start /nodefaultlib kernel32.lib|p03-imports
+p04-sections|/entry:start /nodefaultlib kernel32.lib|p04-sections
+p05-addr64-dyn|/entry:start /nodefaultlib /dynamicbase kernel32.lib|p05-addr64
+p05-addr64-fixed|/entry:start /nodefaultlib /fixed kernel32.lib|p05-addr64
+p06-frame|/entry:start /nodefaultlib kernel32.lib|p06-frame
+p08-two|/entry:start /nodefaultlib kernel32.lib|p08-two-a p08-two-b
