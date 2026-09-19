@@ -1,0 +1,162 @@
+
+Dump of file p05-addr64-fixed.exe
+
+PE signature found
+
+File Type: EXECUTABLE IMAGE
+
+FILE HEADER VALUES
+            8664 machine (x64)
+               3 number of sections
+        6AAEDFA0 time date stamp Sun Sep 20 00:16:48 2026
+               0 file pointer to symbol table
+               0 number of symbols
+              F0 size of optional header
+              23 characteristics
+                   Relocations stripped
+                   Executable
+                   Application can handle large (>2GB) addresses
+
+OPTIONAL HEADER VALUES
+             20B magic # (PE32+)
+           14.44 linker version
+             200 size of code
+             400 size of initialized data
+               0 size of uninitialized data
+            1000 entry point (0000000140001000)
+            1000 base of code
+       140000000 image base (0000000140000000 to 0000000140003FFF)
+            1000 section alignment
+             200 file alignment
+            6.00 operating system version
+            0.00 image version
+            6.00 subsystem version
+               0 Win32 version
+            4000 size of image
+             400 size of headers
+               0 checksum
+               3 subsystem (Windows CUI)
+            8120 DLL characteristics
+                   High Entropy Virtual Addresses
+                   NX compatible
+                   Terminal Server Aware
+          100000 size of stack reserve
+            1000 size of stack commit
+          100000 size of heap reserve
+            1000 size of heap commit
+               0 loader flags
+              10 number of directories
+               0 [       0] RVA [size] of Export Directory
+            2110 [      28] RVA [size] of Import Directory
+               0 [       0] RVA [size] of Resource Directory
+               0 [       0] RVA [size] of Exception Directory
+               0 [       0] RVA [size] of Certificates Directory
+               0 [       0] RVA [size] of Base Relocation Directory
+            2010 [      1C] RVA [size] of Debug Directory
+               0 [       0] RVA [size] of Architecture Directory
+               0 [       0] RVA [size] of Global Pointer Directory
+               0 [       0] RVA [size] of Thread Storage Directory
+               0 [       0] RVA [size] of Load Configuration Directory
+               0 [       0] RVA [size] of Bound Import Directory
+            2000 [      10] RVA [size] of Import Address Table Directory
+               0 [       0] RVA [size] of Delay Import Directory
+               0 [       0] RVA [size] of COM Descriptor Directory
+               0 [       0] RVA [size] of Reserved Directory
+
+
+SECTION HEADER #1
+   .text name
+      18 virtual size
+    1000 virtual address (0000000140001000 to 0000000140001017)
+     200 size of raw data
+     400 file pointer to raw data (00000400 to 000005FF)
+       0 file pointer to relocation table
+       0 file pointer to line numbers
+       0 number of relocations
+       0 number of line numbers
+60000020 flags
+         Code
+         Execute Read
+
+RAW DATA #1
+  0000000140001000: 48 83 EC 28 48 8B 05 F5 1F 00 00 33 C9 E8 00 00  H.ì(H..õ...3Éè..
+  0000000140001010: 00 00 FF 25 E8 0F 00 00                          ..ÿ%è...
+
+SECTION HEADER #2
+  .rdata name
+     164 virtual size
+    2000 virtual address (0000000140002000 to 0000000140002163)
+     200 size of raw data
+     600 file pointer to raw data (00000600 to 000007FF)
+       0 file pointer to relocation table
+       0 file pointer to line numbers
+       0 number of relocations
+       0 number of line numbers
+40000040 flags
+         Initialized Data
+         Read Only
+
+RAW DATA #2
+  0000000140002000: 48 21 00 00 00 00 00 00 00 00 00 00 00 00 00 00  H!..............
+  0000000140002010: 00 00 00 00 A0 DF AE 6A 00 00 00 00 0D 00 00 00  .....ß®j........
+  0000000140002020: CC 00 00 00 44 20 00 00 44 06 00 00 18 00 00 00  Ì...D ..D.......
+  0000000140002030: 00 80 00 80 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  0000000140002040: 00 00 00 00 00 00 00 00 00 10 00 00 18 00 00 00  ................
+  0000000140002050: 2E 74 65 78 74 24 6D 6E 00 00 00 00 00 20 00 00  .text$mn..... ..
+  0000000140002060: 10 00 00 00 2E 69 64 61 74 61 24 35 00 00 00 00  .....idata$5....
+  0000000140002070: 10 20 00 00 1C 00 00 00 2E 72 64 61 74 61 00 00  . .......rdata..
+  0000000140002080: 2C 20 00 00 18 00 00 00 2E 72 64 61 74 61 24 76  , .......rdata$v
+  0000000140002090: 6F 6C 74 6D 64 00 00 00 44 20 00 00 CC 00 00 00  oltmd...D ..Ì...
+  00000001400020A0: 2E 72 64 61 74 61 24 7A 7A 7A 64 62 67 00 00 00  .rdata$zzzdbg...
+  00000001400020B0: 10 21 00 00 14 00 00 00 2E 69 64 61 74 61 24 32  .!.......idata$2
+  00000001400020C0: 00 00 00 00 24 21 00 00 14 00 00 00 2E 69 64 61  ....$!.......ida
+  00000001400020D0: 74 61 24 33 00 00 00 00 38 21 00 00 10 00 00 00  ta$3....8!......
+  00000001400020E0: 2E 69 64 61 74 61 24 34 00 00 00 00 48 21 00 00  .idata$4....H!..
+  00000001400020F0: 1C 00 00 00 2E 69 64 61 74 61 24 36 00 00 00 00  .....idata$6....
+  0000000140002100: 00 30 00 00 18 00 00 00 2E 64 61 74 61 00 00 00  .0.......data...
+  0000000140002110: 38 21 00 00 00 00 00 00 00 00 00 00 56 21 00 00  8!..........V!..
+  0000000140002120: 00 20 00 00 00 00 00 00 00 00 00 00 00 00 00 00  . ..............
+  0000000140002130: 00 00 00 00 00 00 00 00 48 21 00 00 00 00 00 00  ........H!......
+  0000000140002140: 00 00 00 00 00 00 00 00 86 01 45 78 69 74 50 72  ..........ExitPr
+  0000000140002150: 6F 63 65 73 73 00 4B 45 52 4E 45 4C 33 32 2E 64  ocess.KERNEL32.d
+  0000000140002160: 6C 6C 00 00                                      ll..
+
+  Debug Directories
+
+        Time Type        Size      RVA  Pointer
+    -------- ------- -------- -------- --------
+    6AAEDFA0 coffgrp       CC 00002044      644
+
+  Section contains the following imports:
+
+    KERNEL32.dll
+             140002000 Import Address Table
+             140002138 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                         186 ExitProcess
+
+SECTION HEADER #3
+   .data name
+      18 virtual size
+    3000 virtual address (0000000140003000 to 0000000140003017)
+     200 size of raw data
+     800 file pointer to raw data (00000800 to 000009FF)
+       0 file pointer to relocation table
+       0 file pointer to line numbers
+       0 number of relocations
+       0 number of line numbers
+C0000040 flags
+         Initialized Data
+         Read Write
+
+RAW DATA #3
+  0000000140003000: 00 10 00 40 01 00 00 00 00 30 00 40 01 00 00 00  ...@.....0.@....
+  0000000140003010: 08 30 00 40 01 00 00 00                          .0.@....
+
+  Summary
+
+        1000 .data
+        1000 .rdata
+        1000 .text

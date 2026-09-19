@@ -1,0 +1,194 @@
+
+Dump of file p04-sections.exe
+
+PE signature found
+
+File Type: EXECUTABLE IMAGE
+
+FILE HEADER VALUES
+            8664 machine (x64)
+               3 number of sections
+        6AAEDFA0 time date stamp Sun Sep 20 00:16:48 2026
+               0 file pointer to symbol table
+               0 number of symbols
+              F0 size of optional header
+              22 characteristics
+                   Executable
+                   Application can handle large (>2GB) addresses
+
+OPTIONAL HEADER VALUES
+             20B magic # (PE32+)
+           14.44 linker version
+             200 size of code
+            1400 size of initialized data
+               0 size of uninitialized data
+            1000 entry point (0000000140001000)
+            1000 base of code
+       140000000 image base (0000000140000000 to 0000000140004FFF)
+            1000 section alignment
+             200 file alignment
+            6.00 operating system version
+            0.00 image version
+            6.00 subsystem version
+               0 Win32 version
+            5000 size of image
+             400 size of headers
+               0 checksum
+               3 subsystem (Windows CUI)
+            8160 DLL characteristics
+                   High Entropy Virtual Addresses
+                   Dynamic base
+                   NX compatible
+                   Terminal Server Aware
+          100000 size of stack reserve
+            1000 size of stack commit
+          100000 size of heap reserve
+            1000 size of heap commit
+               0 loader flags
+              10 number of directories
+               0 [       0] RVA [size] of Export Directory
+            2128 [      28] RVA [size] of Import Directory
+               0 [       0] RVA [size] of Resource Directory
+               0 [       0] RVA [size] of Exception Directory
+               0 [       0] RVA [size] of Certificates Directory
+               0 [       0] RVA [size] of Base Relocation Directory
+            2018 [      1C] RVA [size] of Debug Directory
+               0 [       0] RVA [size] of Architecture Directory
+               0 [       0] RVA [size] of Global Pointer Directory
+               0 [       0] RVA [size] of Thread Storage Directory
+               0 [       0] RVA [size] of Load Configuration Directory
+               0 [       0] RVA [size] of Bound Import Directory
+            2000 [      10] RVA [size] of Import Address Table Directory
+               0 [       0] RVA [size] of Delay Import Directory
+               0 [       0] RVA [size] of COM Descriptor Directory
+               0 [       0] RVA [size] of Reserved Directory
+
+
+SECTION HEADER #1
+   .text name
+      26 virtual size
+    1000 virtual address (0000000140001000 to 0000000140001025)
+     200 size of raw data
+     400 file pointer to raw data (00000400 to 000005FF)
+       0 file pointer to relocation table
+       0 file pointer to line numbers
+       0 number of relocations
+       0 number of line numbers
+60000020 flags
+         Code
+         Execute Read
+
+RAW DATA #1
+  0000000140001000: 48 83 EC 28 48 8B 05 05 10 00 00 48 89 05 EE 1F  H.ì(H......H..î.
+  0000000140001010: 00 00 48 89 05 F7 1F 00 00 33 C9 E8 00 00 00 00  ..H..÷...3Éè....
+  0000000140001020: FF 25 DA 0F 00 00                                ÿ%Ú...
+
+SECTION HEADER #2
+  .rdata name
+     17C virtual size
+    2000 virtual address (0000000140002000 to 000000014000217B)
+     200 size of raw data
+     600 file pointer to raw data (00000600 to 000007FF)
+       0 file pointer to relocation table
+       0 file pointer to line numbers
+       0 number of relocations
+       0 number of line numbers
+40000040 flags
+         Initialized Data
+         Read Only
+
+RAW DATA #2
+  0000000140002000: 60 21 00 00 00 00 00 00 00 00 00 00 00 00 00 00  `!..............
+  0000000140002010: AA AA AA AA AA AA AA AA 00 00 00 00 A0 DF AE 6A  ªªªªªªªª.....ß®j
+  0000000140002020: 00 00 00 00 0D 00 00 00 DC 00 00 00 4C 20 00 00  ........Ü...L ..
+  0000000140002030: 4C 06 00 00 18 00 00 00 00 80 00 80 00 00 00 00  L...............
+  0000000140002040: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  0000000140002050: 00 10 00 00 26 00 00 00 2E 74 65 78 74 24 6D 6E  ....&....text$mn
+  0000000140002060: 00 00 00 00 00 20 00 00 10 00 00 00 2E 69 64 61  ..... .......ida
+  0000000140002070: 74 61 24 35 00 00 00 00 10 20 00 00 24 00 00 00  ta$5..... ..$...
+  0000000140002080: 2E 72 64 61 74 61 00 00 34 20 00 00 18 00 00 00  .rdata..4 ......
+  0000000140002090: 2E 72 64 61 74 61 24 76 6F 6C 74 6D 64 00 00 00  .rdata$voltmd...
+  00000001400020A0: 4C 20 00 00 DC 00 00 00 2E 72 64 61 74 61 24 7A  L ..Ü....rdata$z
+  00000001400020B0: 7A 7A 64 62 67 00 00 00 28 21 00 00 14 00 00 00  zzdbg...(!......
+  00000001400020C0: 2E 69 64 61 74 61 24 32 00 00 00 00 3C 21 00 00  .idata$2....<!..
+  00000001400020D0: 14 00 00 00 2E 69 64 61 74 61 24 33 00 00 00 00  .....idata$3....
+  00000001400020E0: 50 21 00 00 10 00 00 00 2E 69 64 61 74 61 24 34  P!.......idata$4
+  00000001400020F0: 00 00 00 00 60 21 00 00 1C 00 00 00 2E 69 64 61  ....`!.......ida
+  0000000140002100: 74 61 24 36 00 00 00 00 00 30 00 00 10 00 00 00  ta$6.....0......
+  0000000140002110: 2E 64 61 74 61 00 00 00 10 30 00 00 08 10 00 00  .data....0......
+  0000000140002120: 2E 62 73 73 00 00 00 00 50 21 00 00 00 00 00 00  .bss....P!......
+  0000000140002130: 00 00 00 00 6E 21 00 00 00 20 00 00 00 00 00 00  ....n!... ......
+  0000000140002140: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  0000000140002150: 60 21 00 00 00 00 00 00 00 00 00 00 00 00 00 00  `!..............
+  0000000140002160: 86 01 45 78 69 74 50 72 6F 63 65 73 73 00 4B 45  ..ExitProcess.KE
+  0000000140002170: 52 4E 45 4C 33 32 2E 64 6C 6C 00 00              RNEL32.dll..
+
+  Debug Directories
+
+        Time Type        Size      RVA  Pointer
+    -------- ------- -------- -------- --------
+    6AAEDFA0 coffgrp       DC 0000204C      64C
+
+  Section contains the following imports:
+
+    KERNEL32.dll
+             140002000 Import Address Table
+             140002150 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                         186 ExitProcess
+
+SECTION HEADER #3
+   .data name
+    1018 virtual size
+    3000 virtual address (0000000140003000 to 0000000140004017)
+     200 size of raw data
+     800 file pointer to raw data (00000800 to 000009FF)
+       0 file pointer to relocation table
+       0 file pointer to line numbers
+       0 number of relocations
+       0 number of line numbers
+C0000040 flags
+         Initialized Data
+         Read Write
+
+RAW DATA #3
+  0000000140003000: BB BB BB BB BB BB BB BB 00 00 00 00 00 00 00 00  »»»»»»»»........
+  0000000140003010: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  0000000140003020: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  0000000140003030: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  0000000140003040: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  0000000140003050: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  0000000140003060: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  0000000140003070: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  0000000140003080: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  0000000140003090: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  00000001400030A0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  00000001400030B0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  00000001400030C0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  00000001400030D0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  00000001400030E0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  00000001400030F0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  0000000140003100: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  0000000140003110: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  0000000140003120: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  0000000140003130: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  0000000140003140: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  0000000140003150: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  0000000140003160: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  0000000140003170: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  0000000140003180: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  0000000140003190: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  00000001400031A0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  00000001400031B0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  00000001400031C0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  00000001400031D0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  00000001400031E0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  00000001400031F0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+
+  Summary
+
+        2000 .data
+        1000 .rdata
+        1000 .text
