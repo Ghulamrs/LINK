@@ -2,6 +2,9 @@
 ; Lines beginning with a semicolon are comments, as for.exe already skips them.
 ; The common flags, added by probe.cmd, are: /nologo /subsystem:console /map
 p01-bare|/entry:start /nodefaultlib|p01-bare
+; the same object with a library named but nothing imported from it: size of headers is 0x200
+; in p01 and 0x400 everywhere else, and this says which of the two causes it
+p01-bare-lib|/entry:start /nodefaultlib kernel32.lib|p01-bare
 p02-import|/entry:start /nodefaultlib kernel32.lib|p02-import
 p03-imports|/entry:start /nodefaultlib kernel32.lib|p03-imports
 p04-sections|/entry:start /nodefaultlib kernel32.lib|p04-sections
