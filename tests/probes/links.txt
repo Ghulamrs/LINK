@@ -12,3 +12,11 @@ p05-addr64-dyn|/entry:start /nodefaultlib /dynamicbase kernel32.lib|p05-addr64
 p05-addr64-fixed|/entry:start /nodefaultlib /fixed kernel32.lib|p05-addr64
 p06-frame|/entry:start /nodefaultlib kernel32.lib|p06-frame
 p08-two|/entry:start /nodefaultlib kernel32.lib|p08-two-a p08-two-b
+; p09: two DLLs, five names each - the ILT/IAT order p03 could not settle, and the order of the
+; two descriptors, thunk runs and hint/name blobs against each other. Needs user32.lib beside
+; kernel32.lib in tests/ref, which probes.sh brings back with it.
+p09-twodll|/entry:start /nodefaultlib kernel32.lib user32.lib|p09-twodll
+; p10: three Rich entries - an odd count - from an ml64 object, a masm object and the linker
+p10-rich-odd|/entry:start /nodefaultlib|p01-bare p10-unmarked-my
+; p11: /stack:8388608, as cxx1i's link line asks
+p11-stack|/entry:start /nodefaultlib /stack:8388608|p11-stack

@@ -1,0 +1,2 @@
+modules=c1.asm c2.asm
+from=MASM/tests/comdat

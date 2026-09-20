@@ -1,0 +1,4 @@
+Microsoft (R) Macro Assembler (x64) Version 14.44.35228.0
+Microsoft (R) Incremental Linker Version 14.44.35228.0
+Microsoft (R) C/C++ Optimizing Compiler Version 19.44.35228 for x64
+09/20/2026  06:13 PM           477,696 masm.exe

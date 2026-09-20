@@ -1,0 +1,2 @@
+modules=hd_standard_headers.c
+from=VM6747/Compiler-Ci/tests/cases

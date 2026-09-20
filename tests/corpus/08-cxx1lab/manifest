@@ -1,0 +1,3 @@
+modules=demo.cpp shapes.cpp report.cpp
+headers=shapes.h report.h
+from=VM6747/TriLab/cpp (CXX1Lab)

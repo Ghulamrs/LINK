@@ -1,0 +1,3 @@
+modules=prog.shm stats.c tally.c text.c
+headers=shmrt.h
+from=VM6747/Compiler-Si/examples/using-a-library + Compiler-Ci/examples/shalimar-library

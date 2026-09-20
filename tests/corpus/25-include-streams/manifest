@@ -1,0 +1,2 @@
+modules=include-streams.cpp
+from=VM6747/Compiler-Cppi/tests/cases

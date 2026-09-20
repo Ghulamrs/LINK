@@ -1,0 +1,22 @@
+// ShmLab: six of the compiler's examples, each a program of its own until
+// its main was renamed - which is how a Shalimar program becomes a library
+// - called in turn from here. What the lab exercises: real and integer
+// arithmetic, arrays of one and two dimensions, text, borrowed library
+// functions (sqrt, sin, abs, min, ceil), and a program of seven files
+// that the project, not the compiler, says how to assemble.
+fun <> = main() {
+  ? "[shmlab]"
+  ? "-- primes"
+  prime_demo()
+  ? "-- square roots"
+  sqroot_demo()
+  ? "-- matrix inverse"
+  invert_demo()
+  ? "-- gauss-seidel"
+  gaussseidel_demo()
+  ? "-- rotations"
+  rotations_demo()
+  ? "-- text"
+  strsplit_demo()
+  ? "[done]"
+}

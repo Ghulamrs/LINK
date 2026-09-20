@@ -21,7 +21,7 @@ scp -q "$BOX:$ROOT/build/probe/*" "$T/" || exit 1
 [ $rc = 0 ] || echo "probes.sh: the box reported a failure - read the .ml64, .link and .lib.log files"
 # the objects, the archive, the import library and the images the linker is held to: the bed
 # under tests/ref is what `make test` reads, and it is only as current as the last probe run
-for f in "$T"/*.obj "$T"/*.exe "$T"/*.exe.txt "$T"/p07.lib "$T"/kernel32.lib; do
+for f in "$T"/*.obj "$T"/*.exe "$T"/*.exe.txt "$T"/p07.lib "$T"/kernel32.lib "$T"/user32.lib; do
     [ -e "$f" ] && cp "$f" tests/ref/
 done
 

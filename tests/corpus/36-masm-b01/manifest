@@ -1,0 +1,2 @@
+modules=b01.asm
+from=MASM/tests/link

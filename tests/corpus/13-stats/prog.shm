@@ -1,0 +1,41 @@
+// Calling a C library from Shalimar.
+//
+// `uses` has two forms and this file uses both. `uses sqrt` borrows from the
+// table shc carries - the C standard library, whose signatures shc already
+// knows. `uses <real> = stats_mean(...)` declares a function shc has never
+// seen and never will: the declaration IS the contract, and the link is given
+// the library with --with=.
+//
+// The library is Compiler-C/examples/shalimar-library. Build it there first.
+
+uses sqrt
+
+uses <real> = stats_total(a[]: real)
+uses <real> = stats_mean(a[]: real)
+uses <real> = stats_largest(a[]: real)
+uses <real> = stats_grand_total(a[][]: real)
+uses <> = stats_scale(a[]: real, by: real)
+
+fun <> = main() {
+  real v[5] : { 2.0, 4.0, 4.0, 4.0, 6.0 }
+  real m[2][3] : { {1.0, 2.0, 3.0}, {4.0, 5.0, 6.0} }
+  real spread : 0.0
+
+  ? "total   " stats_total(v)
+  ? "mean    " stats_mean(v)
+  ? "largest " stats_largest(v)
+
+  // A rank-2 array crosses the same way. The C side has to take the row with
+  // shm_get_ref before reading it - see stats_grand_total.
+  ? "grid    " stats_grand_total(m)
+
+  // The C and Shalimar halves compose: sqrt is borrowed from the table, the
+  // rest from the library, and nothing in the call says which is which.
+  spread : sqrt(stats_mean(v))
+  ? "sqrt of the mean " spread
+
+  // Shalimar passes an array by reference, so a C function may write through
+  // the handle and the caller sees it.
+  stats_scale(v, 10.0)
+  ? "after scaling by ten, total " stats_total(v)
+}

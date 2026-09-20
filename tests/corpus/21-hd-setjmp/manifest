@@ -1,0 +1,2 @@
+modules=hd_setjmp.c
+from=VM6747/Compiler-Ci/tests/cases

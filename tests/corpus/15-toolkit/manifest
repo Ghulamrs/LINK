@@ -1,0 +1,2 @@
+modules=toolkit.c
+from=VM6747/Compiler-Ci/tests/cases

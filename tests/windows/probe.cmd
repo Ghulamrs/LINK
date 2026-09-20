@@ -22,6 +22,13 @@ for %%f in (%PROBES%\*.asm) do (
     if exist %%~nf.obj dumpbin /nologo /all %%~nf.obj > %%~nf.obj.txt
 )
 
+rem  p10 takes an object the project's own assembler wrote - one with no @comp.id - so that the
+rem  Rich header's count of entries comes out odd. RIDE's masm is used, or MASMEXE names one.
+set MASM=C:\Program Files\RIDE 4.0\bin\masm.exe
+if not "%MASMEXE%"=="" set MASM=%MASMEXE%
+if exist "%MASM%" ("%MASM%" /c /nologo /Fo p10-unmarked-my.obj %PROBES%\p10-unmarked.asm > p10-unmarked-my.masm 2>&1 || (echo MASM-FAILED p10 & set fail=1)) else (echo NO-MASM p10-rich-odd will not link)
+if exist p10-unmarked-my.obj dumpbin /nologo /all p10-unmarked-my.obj > p10-unmarked-my.obj.txt
+
 rem  link: each line of links.txt is name | extra flags | objects
 for /f "usebackq tokens=1,2,* delims=|" %%a in ("%PROBES%\links.txt") do (
     set objs=
@@ -47,7 +54,7 @@ if exist p07-lib.exe (
 rem  the import library the probes link against. It is Microsoft's, not this project's, so it
 rem  is not checked in - but the Mac side cannot link p02..p08 without it, and copying it back
 rem  beside the objects is what lets tests\run.sh compare every image rather than one.
-for %%l in (kernel32.lib) do copy /y "%%~$LIB:l" . >nul 2>&1 || echo NO-KERNEL32
+for %%l in (kernel32.lib user32.lib) do copy /y "%%~$LIB:l" . >nul 2>&1 || echo NO-%%l
 
 rem  the versions that made all this, so a difference later can be dated
 ml64 2>&1 | findstr /C:"Version" > versions.txt

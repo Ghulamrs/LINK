@@ -1,0 +1,3 @@
+modules=vector3.cpp table.cpp main.cpp
+headers=vector3.h table.h
+from=RIDE/examples + a main written for the review

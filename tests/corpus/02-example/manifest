@@ -1,0 +1,3 @@
+modules=hello.c counter.c
+headers=counter.h
+from=RIDE/examples

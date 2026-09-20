@@ -1,0 +1,2 @@
+modules=greet.c main.c
+from=RIDE/examples

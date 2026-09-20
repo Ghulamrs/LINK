@@ -1,0 +1,2 @@
+modules=main.shl prime.shl sqroot.shl invert.shl gaussseidel.shl rotations.shl strsplit.shl
+from=VM6747/TriLab/shm (ShmLab)

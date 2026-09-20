@@ -1,0 +1,120 @@
+
+Dump of file p10-rich-odd.exe
+
+PE signature found
+
+File Type: EXECUTABLE IMAGE
+
+FILE HEADER VALUES
+            8664 machine (x64)
+               2 number of sections
+        6AB00D96 time date stamp Sun Sep 20 21:45:10 2026
+               0 file pointer to symbol table
+               0 number of symbols
+              F0 size of optional header
+              22 characteristics
+                   Executable
+                   Application can handle large (>2GB) addresses
+
+OPTIONAL HEADER VALUES
+             20B magic # (PE32+)
+           14.44 linker version
+             200 size of code
+             200 size of initialized data
+               0 size of uninitialized data
+            1000 entry point (0000000140001000)
+            1000 base of code
+       140000000 image base (0000000140000000 to 0000000140002FFF)
+            1000 section alignment
+             200 file alignment
+            6.00 operating system version
+            0.00 image version
+            6.00 subsystem version
+               0 Win32 version
+            3000 size of image
+             400 size of headers
+               0 checksum
+               3 subsystem (Windows CUI)
+            8160 DLL characteristics
+                   High Entropy Virtual Addresses
+                   Dynamic base
+                   NX compatible
+                   Terminal Server Aware
+          100000 size of stack reserve
+            1000 size of stack commit
+          100000 size of heap reserve
+            1000 size of heap commit
+               0 loader flags
+              10 number of directories
+               0 [       0] RVA [size] of Export Directory
+               0 [       0] RVA [size] of Import Directory
+               0 [       0] RVA [size] of Resource Directory
+               0 [       0] RVA [size] of Exception Directory
+               0 [       0] RVA [size] of Certificates Directory
+               0 [       0] RVA [size] of Base Relocation Directory
+            2000 [      1C] RVA [size] of Debug Directory
+               0 [       0] RVA [size] of Architecture Directory
+               0 [       0] RVA [size] of Global Pointer Directory
+               0 [       0] RVA [size] of Thread Storage Directory
+               0 [       0] RVA [size] of Load Configuration Directory
+               0 [       0] RVA [size] of Bound Import Directory
+               0 [       0] RVA [size] of Import Address Table Directory
+               0 [       0] RVA [size] of Delay Import Directory
+               0 [       0] RVA [size] of COM Descriptor Directory
+               0 [       0] RVA [size] of Reserved Directory
+
+
+SECTION HEADER #1
+   .text name
+      16 virtual size
+    1000 virtual address (0000000140001000 to 0000000140001015)
+     200 size of raw data
+     400 file pointer to raw data (00000400 to 000005FF)
+       0 file pointer to relocation table
+       0 file pointer to line numbers
+       0 number of relocations
+       0 number of line numbers
+60000020 flags
+         Code
+         Execute Read
+
+RAW DATA #1
+  0000000140001000: 33 C0 C3 CC CC CC CC CC CC CC CC CC CC CC CC CC  3юцллллллллллллл
+  0000000140001010: B8 0A 00 00 00 C3                                ╦....ц
+
+SECTION HEADER #2
+  .rdata name
+      9C virtual size
+    2000 virtual address (0000000140002000 to 000000014000209B)
+     200 size of raw data
+     600 file pointer to raw data (00000600 to 000007FF)
+       0 file pointer to relocation table
+       0 file pointer to line numbers
+       0 number of relocations
+       0 number of line numbers
+40000040 flags
+         Initialized Data
+         Read Only
+
+RAW DATA #2
+  0000000140002000: 00 00 00 00 96 0D B0 6A 00 00 00 00 0D 00 00 00  ......╟j........
+  0000000140002010: 58 00 00 00 34 20 00 00 34 06 00 00 18 00 00 00  X...4 ..4.......
+  0000000140002020: 00 80 00 80 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  0000000140002030: 00 00 00 00 00 00 00 00 00 10 00 00 16 00 00 00  ................
+  0000000140002040: 2E 74 65 78 74 24 6D 6E 00 00 00 00 00 20 00 00  .text$mn..... ..
+  0000000140002050: 1C 00 00 00 2E 72 64 61 74 61 00 00 1C 20 00 00  .....rdata... ..
+  0000000140002060: 18 00 00 00 2E 72 64 61 74 61 24 76 6F 6C 74 6D  .....rdata$voltm
+  0000000140002070: 64 00 00 00 34 20 00 00 68 00 00 00 2E 72 64 61  d...4 ..h....rda
+  0000000140002080: 74 61 24 7A 7A 7A 64 62 67 00 00 00 00 00 00 00  ta$zzzdbg.......
+  0000000140002090: 00 00 00 00 00 00 00 00 00 00 00 00              ............
+
+  Debug Directories
+
+        Time Type        Size      RVA  Pointer
+    -------- ------- -------- -------- --------
+    6AB00D96 coffgrp       58 00002034      634
+
+  Summary
+
+        1000 .rdata
+        1000 .text

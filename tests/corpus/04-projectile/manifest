@@ -1,0 +1,2 @@
+modules=projectile.c
+from=RIDE/examples

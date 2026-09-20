@@ -15,7 +15,13 @@ cd "$(dirname "$0")/.." || exit 1
 LINK=${LINK:-build/link.exe}
 REF=tests/ref
 OUT=${OUT:-build/test}
-STAMP=6AAEDFA0                  # the second link.exe stamped every reference image with
+# The time-date stamp is read off each reference image rather than pinned here by hand: link.exe
+# stamps every image with the second it ran, so a probe run re-stamps the whole bed, and a
+# constant written here went stale - and the bed all red - after every run. STAMP=hex overrides.
+stamp_of() {
+    lf=$(od -An -tu4 -j 60 -N 4 "$1" | tr -d ' ')
+    od -An -tx4 -j $((lf + 8)) -N 4 "$1" | tr -d ' '
+}
 
 [ -x "$LINK" ] || { echo "run.sh: no linker at $LINK - run make first"; exit 1; }
 mkdir -p "$OUT" || exit 1
@@ -43,7 +49,8 @@ one() {
     if [ -n "$missing" ]; then
         printf '%-18s SKIP  missing:%s\n' "$name" "$missing"; skip=$((skip+1)); return
     fi
-    if ! "$LINK" /out:"$OUT/$name.exe" /timestamp:$STAMP $fl $args > "$OUT/$name.log" 2>&1; then
+    stamp=${STAMP:-$(stamp_of "$REF/$name.exe")}
+    if ! "$LINK" /out:"$OUT/$name.exe" /timestamp:$stamp $fl $args > "$OUT/$name.log" 2>&1; then
         printf '%-18s FAIL  %s\n' "$name" "$(head -1 "$OUT/$name.log")"; fail=$((fail+1)); return
     fi
     if cmp -s "$OUT/$name.exe" "$REF/$name.exe"; then

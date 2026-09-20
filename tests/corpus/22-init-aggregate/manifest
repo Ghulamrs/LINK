@@ -1,0 +1,2 @@
+modules=init_aggregate.c
+from=VM6747/Compiler-Ci/tests/cases

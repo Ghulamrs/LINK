@@ -1,0 +1,2 @@
+modules=lib_strtod.c
+from=VM6747/Compiler-Ci/tests/cases

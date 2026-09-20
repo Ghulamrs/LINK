@@ -1,0 +1,36 @@
+fun <int,int> = divide(a: int, b: int) {
+  return (a / b, a % b)
+}
+
+fun <> = bump(&n: int) {
+  n : n + 1
+}
+
+fun <real> = area(w: real, h: real) {
+  return w * h
+}
+
+fun <int> = deep(n: int) {
+  if n < 1 {
+    return 0
+  }
+  return 1 + deep(n - 1)
+}
+
+fun <int> = mixed(a: int, x: real, b: int, y: real) {
+  ? a x b y
+  return a + b
+}
+
+fun <> = main() {
+  <q,r> : divide(17, 5)
+  ? q r
+  x : 5
+  bump(x)
+  ? x
+  ? area(3.0, 2.5)
+  ? deep(20)
+  ? mixed(1, 2.5, 3, 4.5)
+  ? divide(9, 4)
+  ? "text and" 42
+}

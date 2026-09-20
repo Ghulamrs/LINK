@@ -1,0 +1,2 @@
+modules=b02-main.asm b02-twice.asm
+from=MASM/tests/link
