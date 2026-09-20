@@ -648,6 +648,17 @@ bool Link::read_inputs()
     }
 
     resolved.swap(w.defined);
+
+    /*  The kept-static map, for a reloc to a static in a COMDAT that lost. Built after the
+     *  dead COMDATs are dropped, over the sections that remain, so a name resolves to the
+     *  copy that stays. An external already sits in `resolved`; this adds the statics. */
+    for (size_t mi = 0; mi < mods.size(); mi++)
+        for (size_t k = 0; k < mods[mi].syms.size(); k++) {
+            const Symbol &s = mods[mi].syms[k];
+            if (s.section <= 0 || (size_t)s.section > mods[mi].secs.size() || s.name.empty()) continue;
+            if (mods[mi].secs[s.section - 1].dropped) continue;
+            if (kept.find(s.name) == kept.end()) kept[s.name] = std::make_pair((int)mi, (int)k);
+        }
     return true;
 }
 
@@ -1013,9 +1024,19 @@ bool Link::fix_up()
                  *  lost, which is the same thing: the name reaches the definition that won.
                  *  A module's own inline __local_stdio_printf_options is the usual case. */
                 std::map<std::string, std::pair<int, int> >::const_iterator it = resolved.find(s.name);
-                if (it == resolved.end()) { err = "unresolved external symbol: " + s.name; return false; }
-                if (!sym_rva(it->second.first, it->second.second, S)) return false;
-                absolute = mods[it->second.first].syms[it->second.second].section == -1;
+                /*  A static whose own COMDAT section lost falls back on the winning copy, kept
+                 *  by name in `kept` - the exception funclets $catch$N, $unwind$, $pdata$ are
+                 *  the case the corpus hit (07-vector3's std::string operator+, defined in two
+                 *  objects, each with its own $catch$0). */
+                bool have = it != resolved.end();
+                std::pair<int, int> def = have ? it->second : std::make_pair(0, 0);
+                if (!have) {
+                    std::map<std::string, std::pair<int, int> >::const_iterator kt = kept.find(s.name);
+                    if (kt == kept.end()) { err = "unresolved external symbol: " + s.name; return false; }
+                    def = kt->second;
+                }
+                if (!sym_rva(def.first, def.second, S)) return false;
+                absolute = mods[def.first].syms[def.second].section == -1;
             } else {
                 if (!sym_rva(c->module, rl.sym, S)) return false;
                 absolute = s.section == -1;

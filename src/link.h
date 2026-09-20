@@ -165,6 +165,11 @@ struct Link {
     std::vector<Contrib*> all;        /* every placed contribution, in layout order */
     std::vector<OutSection> outs;
     std::map<std::string, std::pair<int, int> > resolved;   /* name -> module, symbol */
+    /*  Every symbol - external or static - defined in a section that survived, by name. A
+     *  reloc to a static whose own COMDAT section lost (an exception funclet's $catch$N,
+     *  $unwind$, $pdata$) reaches the winning copy through this: the associated statics
+     *  travel with the parent COMDAT, so the same name is defined in the member that won. */
+    std::map<std::string, std::pair<int, int> > kept;
     std::vector<std::pair<u32, u16> > base_relocs;   /* RVA and type: DIR64 for an ADDR64, HIGHLOW for an ADDR32 */
     std::vector<u8>  reloc_data;      /* .reloc, once those are known */
     u32 entry_rva;
