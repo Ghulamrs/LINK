@@ -65,10 +65,60 @@ it becomes `0x8120` - dynamic base is the bit that goes - and the `.reloc` secti
 ### One constant that is not constant
 
 `size of headers` is **0x200** in p01 and **0x400** in every other image, which moves the first
-section's file offset with it. The only difference in p01's link line is that it names no library
-at all. Whether it is the library on the command line or the imports that follow from it is not
-yet known: `p01-bare-lib` links the same object with `kernel32.lib` present but nothing imported,
-and settles it.
+section's file offset with it. That looked like the library on the command line; it is not. It
+is arithmetic:
+
+    size of headers = align(e_lfanew + 24 + 240 + sections * 40, 0x200)
+
+p01's PE header starts at 0xA8 and has two sections, so its headers come to exactly 0x200 and
+stop there. Every other image starts its PE header at 0xC8 or 0xD0 and spills past 0x200, so
+the round-up takes it to 0x400. What varies is `e_lfanew`, and what moves `e_lfanew` is the
+Rich header below. `p01-bare-lib` is still in links.txt and still worth running, but only now
+as a check on that rule rather than as an open question.
+
+## The Rich header
+
+Between the DOS stub and the PE signature link.exe writes a record of the tools that made the
+image. Every dword of it is XOR-ed with one key, which is the last dword of the block:
+
+    "DanS" ^ key
+    key, key, key                    (three dwords of padding, so zero once decoded)
+    (comp.id ^ key, count ^ key) ... (one pair per tool)
+    "Rich", key
+
+The comp.ids are the values of the objects' own `@comp.id` symbols: 0x0103899C is the ml64 that
+wrote them, 0x01018179 the tool that built kernel32.lib's three descriptor members, and
+0x0102899C is link.exe putting its own name to the image. A module with no `@comp.id` - a short
+import member is not an object and has none - counts as **0x00010000**, which is why p02 shows
+one of those and p03, with three imports, shows three.
+
+### The key
+
+A checksum, and it reproduces on all nine images:
+
+    c = 0x80
+    for i in 0 .. 0x7F, skipping 0x3C..0x3F (e_lfanew):  c += rol32(dos[i], i & 31)
+    for each entry:                                      c += rol32(comp.id, count & 31)
+
+### The order of the entries
+
+Ascending by comp.id, and then each adjacent pair swapped. p02 sorts to 0x00010000, 0x01018179,
+0x0102899C, 0x0103899C and is written 0x01018179, 0x00010000, 0x0103899C, 0x0102899C. All nine
+images agree; all nine have an even number of entries, so what happens to the odd one out is
+not known and is worth a probe.
+
+### Where the PE header lands
+
+The block is followed by zeros up to `e_lfanew`, and the room link.exe leaves is not the room it
+used. Counting slots from the start of the entries, `e_lfanew = 0x98 + 8 * R`, where
+
+    R = (one slot per module that carries a @comp.id) + (one slot for all the unmarked
+        together, if there are any) + (one for the linker itself)
+
+which is the sum of the counts with the unmarked entry counted once rather than by its count.
+p03 is what forces that reading: its three short imports collapse into a single unmarked entry,
+and its PE header starts where p02's does, at 0xC8, rather than eight bytes further on per
+import. This is a rule read off nine images, not an explanation of them.
 
 ## Imports (p02)
 

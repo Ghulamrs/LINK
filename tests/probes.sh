@@ -19,6 +19,12 @@ ssh -n -o BatchMode=yes "$BOX" "cd /d $W & tar xzf tree.tgz & $W\\tests\\windows
 rc=$?
 scp -q "$BOX:$ROOT/build/probe/*" "$T/" || exit 1
 [ $rc = 0 ] || echo "probes.sh: the box reported a failure - read the .ml64, .link and .lib.log files"
+# the objects, the archive, the import library and the images the linker is held to: the bed
+# under tests/ref is what `make test` reads, and it is only as current as the last probe run
+for f in "$T"/*.obj "$T"/*.exe "$T"/*.exe.txt "$T"/p07.lib "$T"/kernel32.lib; do
+    [ -e "$f" ] && cp "$f" tests/ref/
+done
+
 for f in "$T"/*.exe; do
     [ -e "$f" ] || continue
     printf '%-20s %8d bytes\n' "$(basename "$f")" "$(wc -c < "$f")"

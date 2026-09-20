@@ -44,6 +44,11 @@ if exist p07-lib.exe (
     echo p07-lib rc=!errorlevel! > p07-lib.out
 )
 
+rem  the import library the probes link against. It is Microsoft's, not this project's, so it
+rem  is not checked in - but the Mac side cannot link p02..p08 without it, and copying it back
+rem  beside the objects is what lets tests\run.sh compare every image rather than one.
+for %%l in (kernel32.lib) do copy /y "%%~$LIB:l" . >nul 2>&1 || echo NO-KERNEL32
+
 rem  the versions that made all this, so a difference later can be dated
 ml64 2>&1 | findstr /C:"Version" > versions.txt
 link 2>&1 | findstr /C:"Version" >> versions.txt
