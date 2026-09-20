@@ -91,6 +91,11 @@ struct Contrib {
     int  out;                 /* output section index, -1 until placed */
     u32  rva;
     u32  fileoff;             /* 0 for a contribution with no bytes in the file */
+    /*  Every field settled here rather than at each of the four places a contribution is
+     *  made: the linker's own records were left with an unset `select` and their module with
+     *  an unset `lib`, and the placement order read that. */
+    Contrib() : flags(0), size(0), module(-1), serial(0), dropped(false), select(COMDAT_NONE),
+                assoc(0), checksum(0), comdat_sym(-1), out(-1), rva(0), fileoff(0) {}
 };
 
 /*  One input file, or one member of an archive, or the linker itself. `compid` is the value
@@ -103,6 +108,7 @@ struct Module {
     u32  compid;
     bool from_archive;
     int  lib;                    /* the input the member came from, in search order; -1 for an object */
+    Module() : compid(0x00010000u), from_archive(false), lib(-1) {}
 };
 
 struct OutSection {
