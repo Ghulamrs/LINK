@@ -664,7 +664,14 @@ bool Link::lay_out()
                 if (opt.verbose) fprintf(stderr, "coffgrp name: %s (%u)\n", last.c_str(), all[i]->size);
                 n += 8 + ((last.size() + 1 + 3) & ~(size_t)3);
             }
-            n += 16;
+            /*  Sixteen zero bytes follow the record - but only in an image with no .data
+             *  section. p04 and p06 carry the same eleven names and the same record and
+             *  differ in exactly this; all thirteen reference images agree on it. What the
+             *  sixteen are for is still unread; that they are not there once .data exists
+             *  is what the bed says. */
+            bool has_data = false;
+            for (size_t i = 0; i < outs.size(); i++) if (outs[i].name == ".data") has_data = true;
+            if (!has_data) n += 16;
             grp.size = (u32)n;
             grp.data.assign(n, 0);
         }

@@ -16,13 +16,15 @@ not by hint, and not by length - and with one DLL and three names there are too 
 tell a rule from a coincidence. Every other probe imports one name, where the question does not
 arise. A probe with two DLLs and five names each would settle it.
 
-**The coffgrp contribution's tail.** link.exe's `.rdata$zzzdbg` run is the coffgrp record
-(4 + the entries; that is what the debug directory's size says) plus, in p01, p02, p06, p07 and
-p11, sixteen zero bytes more - and in p03, p04, p05 and p08 nothing more. p04 and p06 have the
-same eleven names and the same record and differ in the tail, so the rule is not the record's
-size or its count. This linker writes the sixteen bytes always, matches the five, and is
-sixteen bytes long in the other four - every later address in `.rdata` shifted by that much,
-nothing a loader reads changed. What decides it is unread.
+**The coffgrp contribution's tail: read off the bed.** link.exe's `.rdata$zzzdbg` run is the
+coffgrp record - 4 plus the entries, which is what the debug directory's size says - and, in an
+image with no `.data` section, sixteen zero bytes more. p01, p02, p06, p07, p10 and p11 have the
+sixteen; p03, p04, p05, p08 and p09 have none, and those are exactly the images with a `.data`
+section. p04 and p06 carry the same eleven names and the same 0xDC record and differ in just
+this, so the rule is not the record's size or the number of entries. What the sixteen bytes are
+*for* is still unread - nothing a loader consults is in them - but when they are written is not.
+This linker follows it; writing them always left every later address in `.rdata` sixteen bytes
+out in the five images that do not want them.
 
 ## Not implemented
 

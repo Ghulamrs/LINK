@@ -81,7 +81,7 @@ static void fill_own_records(Link &lk)
     /* the debug directory: one entry, type 13, pointing at the coffgrp record */
     wr32(&dbg->data[4],  lk.opt.timestamp);
     wr32(&dbg->data[12], 13);
-    wr32(&dbg->data[16], grp->size - 16);      /* the record; the sixteen zeros after it are not in it */
+    wr32(&dbg->data[16], (u32)at);             /* the record is the bytes written, not the run */
     wr32(&dbg->data[20], grp->rva);
     wr32(&dbg->data[24], grp->fileoff);
 }
