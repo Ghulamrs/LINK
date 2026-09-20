@@ -84,7 +84,12 @@ std::string find_library(const Options &o, const std::string &name)
     if (n.find_first_of("/\\") != std::string::npos) return std::string();
     for (size_t i = 0; i < o.libpath.size(); i++) {
         std::string t = o.libpath[i];
-        if (!t.empty() && t[t.size() - 1] != '/' && t[t.size() - 1] != '\\') t += '\\';
+        if (!t.empty() && t[t.size() - 1] != '/' && t[t.size() - 1] != '\\') {
+            /*  The separator the directory itself uses, and `/` when it says nothing: a
+             *  backslash is not one on the Mac, where this linker is also built, and every
+             *  search there failed before its name could be opened. Windows takes `/` too. */
+            t += (t.find('\\') != std::string::npos && t.find('/') == std::string::npos) ? '\\' : '/';
+        }
         t += n;
         f = fopen(t.c_str(), "rb");
         if (f) { fclose(f); return t; }

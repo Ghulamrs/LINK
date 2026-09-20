@@ -80,6 +80,16 @@ else
     printf '%-22s FAIL  %s\n' absolute-path-input "$(head -1 "$OUT/bad-abspath.log")"; fail=$((fail+1))
 fi
 
+# A library named without a directory is looked for where /libpath: says.
+if "$LINK" /out:"$OUT/lp.exe" /entry:start /nodefaultlib /libpath:"$REF" kernel32.lib \
+        "$REF/p02-import.obj" > "$OUT/bad-libpath.log" 2>&1 && [ -f "$OUT/lp.exe" ]; then
+    printf '%-22s ok\n' libpath-search
+elif [ ! -f "$REF/kernel32.lib" ]; then
+    printf '%-22s SKIP  no %s/kernel32.lib\n' libpath-search "$REF"
+else
+    printf '%-22s FAIL  %s\n' libpath-search "$(head -1 "$OUT/bad-libpath.log")"; fail=$((fail+1))
+fi
+
 echo "---"
 [ "$fail" -eq 0 ] && { echo "bad.sh: every case said what it should"; exit 0; }
 echo "bad.sh: $fail case(s) did not"
