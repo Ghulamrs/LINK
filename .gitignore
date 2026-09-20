@@ -1,1 +1,7 @@
 build/
+.DS_Store
+# Microsoft's import library, brought back by tests/probes.sh for the bed; not ours to check in
+tests/ref/kernel32.lib
+link.xcodeproj/project.xcworkspace/
+link.xcodeproj/xcuserdata/
+x64/

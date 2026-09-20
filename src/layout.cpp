@@ -200,10 +200,11 @@ struct Placed {
 
 u32 out_flags(const std::string &n)
 {
-    if (n == ".text")  return SCN_CNT_CODE | SCN_MEM_EXECUTE | SCN_MEM_READ;
-    if (n == ".data")  return SCN_CNT_INITDATA | SCN_MEM_READ | SCN_MEM_WRITE;
-    if (n == ".reloc") return SCN_CNT_INITDATA | SCN_MEM_DISCARD | SCN_MEM_READ;
-    return SCN_CNT_INITDATA | SCN_MEM_READ;
+    /* cast each: to cl an or of enumerators that fits in an int is an int (C4245) */
+    if (n == ".text")  return (u32)(SCN_CNT_CODE | SCN_MEM_EXECUTE | SCN_MEM_READ);
+    if (n == ".data")  return (u32)(SCN_CNT_INITDATA | SCN_MEM_READ | SCN_MEM_WRITE);
+    if (n == ".reloc") return (u32)(SCN_CNT_INITDATA | SCN_MEM_DISCARD | SCN_MEM_READ);
+    return (u32)(SCN_CNT_INITDATA | SCN_MEM_READ);
 }
 
 int out_order(const std::string &n)
@@ -459,7 +460,7 @@ bool Link::fix_up()
                 break;
             }
             default: {
-                char b[64]; sprintf(b, "relocation type 0x%02x is not handled", rl.type);
+                char b[64]; snprintf(b, sizeof b, "relocation type 0x%02x is not handled", rl.type);
                 err = c->name + ": " + b; return false;
             }
             }

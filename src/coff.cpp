@@ -58,7 +58,7 @@ bool coff_read(const u8 *p, size_t n, const std::string &name, Module &m, std::s
     if (n < 20) { err = name + ": too short for a COFF header"; return false; }
     u16 machine = rd16(p);
     if (machine != 0x8664) {
-        char buf[64]; sprintf(buf, ": machine 0x%04x, not x86-64", machine);
+        char buf[64]; snprintf(buf, sizeof buf, ": machine 0x%04x, not x86-64", machine);
         err = name + buf; return false;
     }
     u16 nsec   = rd16(p + 2);

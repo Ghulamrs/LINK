@@ -1,0 +1,275 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		027BE4BFEE80B79ED1BE6B2C /* src/archive.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5CB0EE75646326D11CE96E61 /* src/archive.cpp */; };
+		C3320F65A817940FDCB7D25D /* src/coff.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6DC7C24EDEF2606DA65045A9 /* src/coff.cpp */; };
+		017F01FEC246759EE119EE36 /* src/image.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9692EF8726C77664D57958E1 /* src/image.cpp */; };
+		54C2BEC26033E6A1047F64F2 /* src/layout.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 88409138A0854A37F7B4B8D1 /* src/layout.cpp */; };
+		53B66FF881CC49D90954D3B9 /* src/main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 204477B5D2A8F31975F5396B /* src/main.cpp */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		5CB0EE75646326D11CE96E61 /* src/archive.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = src/archive.cpp; sourceTree = "<group>"; };
+		6DC7C24EDEF2606DA65045A9 /* src/coff.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = src/coff.cpp; sourceTree = "<group>"; };
+		9692EF8726C77664D57958E1 /* src/image.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = src/image.cpp; sourceTree = "<group>"; };
+		88409138A0854A37F7B4B8D1 /* src/layout.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = src/layout.cpp; sourceTree = "<group>"; };
+		204477B5D2A8F31975F5396B /* src/main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = src/main.cpp; sourceTree = "<group>"; };
+		4576B4188F4A9964F438AEFD /* src/link.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = src/link.h; sourceTree = "<group>"; };
+		6656DF28AF5D20F50CBCEB32 /* link.exe */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = link.exe; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		6A581C2E41C5F80FBD861D72 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		F8FF3E9446499B7BCBFDE3EB = {
+			isa = PBXGroup;
+			children = (
+				7A953A1D209437B91A774D7D /* Sources */,
+				C3AE958A81120D39DC54E821 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		7A953A1D209437B91A774D7D /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				5CB0EE75646326D11CE96E61 /* src/archive.cpp */,
+				6DC7C24EDEF2606DA65045A9 /* src/coff.cpp */,
+				9692EF8726C77664D57958E1 /* src/image.cpp */,
+				88409138A0854A37F7B4B8D1 /* src/layout.cpp */,
+				204477B5D2A8F31975F5396B /* src/main.cpp */,
+				4576B4188F4A9964F438AEFD /* src/link.h */,
+			);
+			name = Sources;
+			sourceTree = "<group>";
+		};
+		C3AE958A81120D39DC54E821 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				6656DF28AF5D20F50CBCEB32 /* link.exe */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		C86FD8D895FEFF0485685DB1 /* link.exe */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8AD393714BC1C682C08872CF;
+			buildPhases = (
+				01BEC0F280CFA981B3B6744B /* Sources */,
+				6A581C2E41C5F80FBD861D72 /* Frameworks */,
+				1DAD57E0BBD0DE4595CF339F /* put the finished program in RStudio's directory */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = link.exe;
+			productName = link.exe;
+			productReference = 6656DF28AF5D20F50CBCEB32 /* link.exe */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		53F3FB63C4C316A25903D089 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastUpgradeCheck = 1600;
+			};
+			buildConfigurationList = DEF8603A7A77CCB79737DAE8;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = F8FF3E9446499B7BCBFDE3EB;
+			productRefGroup = C3AE958A81120D39DC54E821 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				C86FD8D895FEFF0485685DB1 /* link.exe */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		1DAD57E0BBD0DE4595CF339F /* put the finished program in RStudio's directory */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "put the finished program in RStudio's directory";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\ndest=\"$SRCROOT/../RIDE\"\nmkdir -p \"$dest\"\ncp -f \"$BUILT_PRODUCTS_DIR/$PRODUCT_NAME\" \"$dest/.$PRODUCT_NAME.new\"\nmv -f \"$dest/.$PRODUCT_NAME.new\" \"$dest/$PRODUCT_NAME\"\ncodesign --force --sign - \"$dest/$PRODUCT_NAME\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		01BEC0F280CFA981B3B6744B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				027BE4BFEE80B79ED1BE6B2C /* src/archive.cpp in Sources */,
+				C3320F65A817940FDCB7D25D /* src/coff.cpp in Sources */,
+				017F01FEC246759EE119EE36 /* src/image.cpp in Sources */,
+				54C2BEC26033E6A1047F64F2 /* src/layout.cpp in Sources */,
+				53B66FF881CC49D90954D3B9 /* src/main.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1B84C1A1716B349E57D5DAB6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				OBJROOT = "$(TMPDIR)/rstudio-xcode";
+				SYMROOT = "$(TMPDIR)/rstudio-xcode";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_IMPLICIT_SIGN_CONVERSION = NO;
+				CODE_SIGN_STYLE = Automatic;
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				PRODUCT_NAME = link.exe;
+				SDKROOT = macosx;
+				USER_HEADER_SEARCH_PATHS = "$(SRCROOT)/src";
+				WARNING_CFLAGS = (
+					"-Wall",
+					"-Wextra",
+					"-pedantic",
+				);
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				GCC_OPTIMIZATION_LEVEL = 0;
+			};
+			name = Debug;
+		};
+		1165C0BCFF0DC0AB4C1F57F0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				OBJROOT = "$(TMPDIR)/rstudio-xcode";
+				SYMROOT = "$(TMPDIR)/rstudio-xcode";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_IMPLICIT_SIGN_CONVERSION = NO;
+				CODE_SIGN_STYLE = Automatic;
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				PRODUCT_NAME = link.exe;
+				SDKROOT = macosx;
+				USER_HEADER_SEARCH_PATHS = "$(SRCROOT)/src";
+				WARNING_CFLAGS = (
+					"-Wall",
+					"-Wextra",
+					"-pedantic",
+				);
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_OPTIMIZATION_LEVEL = 2;
+			};
+			name = Release;
+		};
+		4B78B3C6FC6053447F66BD96 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				OBJROOT = "$(TMPDIR)/rstudio-xcode";
+				SYMROOT = "$(TMPDIR)/rstudio-xcode";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_IMPLICIT_SIGN_CONVERSION = NO;
+				CODE_SIGN_STYLE = Automatic;
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				PRODUCT_NAME = link.exe;
+				SDKROOT = macosx;
+				USER_HEADER_SEARCH_PATHS = "$(SRCROOT)/src";
+				WARNING_CFLAGS = (
+					"-Wall",
+					"-Wextra",
+					"-pedantic",
+				);
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				GCC_OPTIMIZATION_LEVEL = 0;
+			};
+			name = Debug;
+		};
+		46EF1F5A7CFAB684BFCC4A33 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				OBJROOT = "$(TMPDIR)/rstudio-xcode";
+				SYMROOT = "$(TMPDIR)/rstudio-xcode";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_IMPLICIT_SIGN_CONVERSION = NO;
+				CODE_SIGN_STYLE = Automatic;
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				PRODUCT_NAME = link.exe;
+				SDKROOT = macosx;
+				USER_HEADER_SEARCH_PATHS = "$(SRCROOT)/src";
+				WARNING_CFLAGS = (
+					"-Wall",
+					"-Wextra",
+					"-pedantic",
+				);
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_OPTIMIZATION_LEVEL = 2;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		DEF8603A7A77CCB79737DAE8 /* project */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1B84C1A1716B349E57D5DAB6 /* Debug */,
+				1165C0BCFF0DC0AB4C1F57F0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		8AD393714BC1C682C08872CF /* target */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4B78B3C6FC6053447F66BD96 /* Debug */,
+				46EF1F5A7CFAB684BFCC4A33 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 53F3FB63C4C316A25903D089 /* Project object */;
+}
