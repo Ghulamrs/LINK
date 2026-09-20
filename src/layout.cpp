@@ -479,14 +479,7 @@ bool Link::read_inputs()
         err = "unresolved external symbol";
         if (missing.size() > 1) { char b[32]; snprintf(b, sizeof b, "s (%d)", (int)missing.size()); err += b; }
         err += ":";
-        for (size_t i = 0; i < missing.size(); i++) {
-            std::string shown;
-            for (size_t k = 0; k < missing[i].size(); k++) {
-                char ch = missing[i][k];
-                shown += (ch >= 32 && ch < 127) ? ch : '?';
-            }
-            err += "\n  " + shown;
-        }
+        for (size_t i = 0; i < missing.size(); i++) err += "\n  " + printable(missing[i]);
         return false;
     }
 
@@ -505,7 +498,7 @@ static std::string out_of(const std::string &name)
     if (base == ".text")   return ".text";
     if (base == ".rdata" || base == ".idata" || base == ".xdata" ||
         base == ".edata"  || base == ".CRT"  || base == ".00cfg" ||
-        base == ".rtc"    || base == "_RDATA" || base == ".gfids" || base == ".gehcont")
+        base == ".rtc"    || base == "_RDATA")
         return ".rdata";
     if (base == ".data"  || base == ".bss" || base == ".tls") return ".data";
     if (base == ".pdata")  return ".pdata";

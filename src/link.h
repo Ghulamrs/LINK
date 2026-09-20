@@ -185,6 +185,10 @@ u32 rich_lfanew(const Link &lk);
 std::string find_library(const Options &o, const std::string &name);
 
 /* coff.cpp */
+/*  A name out of an input file, fit to put in a message: a broken object's section name is
+ *  whatever bytes were there, and printing them raw turns a diagnostic into line noise
+ *  (the review's L20 - a 65,535-section object was refused as "3\xef\xbf\xbd runs past the file"). */
+std::string printable(const std::string &s);
 bool coff_read(const u8 *p, size_t n, const std::string &name, Module &m, std::string &err);
 bool coff_is_object(const u8 *p, size_t n);
 

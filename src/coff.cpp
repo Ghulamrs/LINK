@@ -43,6 +43,16 @@ static std::string sym_name(const u8 *f, const u8 *strtab, u32 strsize)
     return std::string((const char *)f, n);
 }
 
+std::string printable(const std::string &s)
+{
+    std::string o;
+    for (size_t i = 0; i < s.size(); i++) {
+        char c = s[i];
+        o += (c >= 32 && c < 127) ? c : '?';
+    }
+    return o;
+}
+
 /*  A section this linker will not place. `.debug$*` goes because no /debug was asked for,
  *  `.drectve` because it is a message to the linker rather than an image (it is read first,
  *  in layout.cpp), LNK_REMOVE because the assembler said so - and the CRT's bookkeeping
@@ -112,7 +122,7 @@ bool coff_read(const u8 *p, size_t n, const std::string &name, Module &m, std::s
 
         u32 rawptr = rd32(sh + 20);
         if (!(c.flags & SCN_CNT_UNINIT) && rawptr && c.size) {
-            if (rawptr + c.size > n) { err = name + ": " + c.name + " runs past the file"; return false; }
+            if (rawptr + c.size > n) { err = name + ": " + printable(c.name) + " runs past the file"; return false; }
             c.data.assign(p + rawptr, p + rawptr + c.size);
         }
         u32 relptr = rd32(sh + 24);

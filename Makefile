@@ -31,6 +31,7 @@ $(OBJDIR)/%.o: src/%.cpp
 
 test: $(TARGET)
 	LINK=$(TARGET) sh tests/run.sh
+	LINK=$(TARGET) sh tests/bad.sh
 
 clean:
 	rm -rf $(OBJDIR) $(TARGET)
