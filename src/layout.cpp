@@ -697,9 +697,10 @@ bool Link::lay_out()
 
 /*  The Rich header, and the one number it decides.
  *
- *  Every module carries a @comp.id saying which tool wrote it, or counts as unmarked when it
- *  does not; link.exe writes one entry per distinct id with the number of modules that had
- *  it, and its own id last. The order is what nine reference images show: ascending by id,
+ *  Every module carries a @comp.id saying which tool wrote it, or counts as zero when it
+ *  does not - an object with none is 0x00000000 and only a short import member is 0x00010000,
+ *  which p10 settled. link.exe writes one entry per distinct id with the number of modules
+ *  that had it, and its own id last. The order is what nine reference images show: ascending by id,
  *  then each adjacent pair swapped. The space it reserves is one slot per marked module plus
  *  one for all the unmarked together plus one for itself - not one per entry - which is why
  *  p03, whose three short imports collapse into a single unmarked entry, still starts its PE

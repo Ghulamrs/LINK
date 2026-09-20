@@ -88,7 +88,10 @@ bool coff_read(const u8 *p, size_t n, const std::string &name, Module &m, std::s
     }
 
     m.name = name;
-    m.compid = 0x00010000u;          /* unmarked until an @comp.id says otherwise */
+    /*  An object with no @comp.id counts as 0x00000000 in the Rich header, not 0x00010000:
+     *  p10 has one beside an ml64 object and link.exe wrote a zero entry for it. 0x00010000
+     *  is the short import member's, which archive.cpp sets for itself. */
+    m.compid = 0;
     m.lib = -1;
     m.secs.resize(nsec);
 

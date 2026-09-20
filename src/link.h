@@ -108,7 +108,7 @@ struct Module {
     u32  compid;
     bool from_archive;
     int  lib;                    /* the input the member came from, in search order; -1 for an object */
-    Module() : compid(0x00010000u), from_archive(false), lib(-1) {}
+    Module() : compid(0), from_archive(false), lib(-1) {}
 };
 
 struct OutSection {

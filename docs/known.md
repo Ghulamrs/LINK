@@ -16,6 +16,27 @@ not by hint, and not by length - and with one DLL and three names there are too 
 tell a rule from a coincidence. Every other probe imports one name, where the question does not
 arise. A probe with two DLLs and five names each would settle it.
 
+**The Rich header: the entry values are settled, the order and the reserve are not.** p10 links
+an ml64 object beside a masm object that carries no `@comp.id`, and link.exe writes three
+entries - `0103899C` x1, `00000000` x1, `0102899C` x1. Two things follow. An *object* with no
+`@comp.id` counts as `0x00000000`; `0x00010000` is the short import member's alone, and this
+linker used to write `0x00010000` for both. That is now right.
+
+The order is not. Across the thirteen reference images the observed precedence is consistent -
+`01018179` before `00010000` before `0103899C` before `00000000` before `0102899C` - so some
+fixed order over ids exists, but no key yet found produces it: not the id ascending or
+descending, not the product id, not the build number, not the count, and "ascending, then
+adjacent pairs swapped" (which fits the nine images with four entries) gives
+`0102899C, 00000000, 0103899C` for p10 against link.exe's `0103899C, 00000000, 0102899C`.
+This linker keeps the swap rule, so p10's three entries come out in the wrong order.
+
+Nor is `e_lfanew` read. The reserve this linker computes - one slot per marked module, one for
+all the unmarked together, one for itself - fits nine images and neither of the two added last:
+p09 wants 5 slots where the rule says 8, p10 wants 5 where it says 3. The slack after `Rich` is
+0 bytes in p01 and p11, 16 in p02-p06 and p10, 24 in p07 and p08, and 8 in p09, and it is not
+an alignment: p01's block ends at 0xA8 and is not padded at all. Whatever link.exe reserves, it
+reserves before it knows the entry list, and the bed has not shown what from.
+
 **The coffgrp contribution's tail: read off the bed.** link.exe's `.rdata$zzzdbg` run is the
 coffgrp record - 4 plus the entries, which is what the debug directory's size says - and, in an
 image with no `.data` section, sixteen zero bytes more. p01, p02, p06, p07, p10 and p11 have the
@@ -31,16 +52,21 @@ out in the five images that do not want them.
 These have no probe, so there is nothing to be faithful to yet. Each is a refusal, not a
 silent wrong answer: the linker says so and stops.
 
-  * COMDAT folding. `MASM/tests/comdat` has the objects for it; link.exe's `SELECT_ANY` and
-    `SELECT_ASSOCIATIVE` have to be read off a probe before this linker guesses at them.
-  * `/DEBUG` and a `.debug` section. `.debug$S` and `.debug$T` are read and left behind.
+  * A `.pdb`. `/DEBUG` is accepted and says on stderr that it does nothing: `.debug$S` and
+    `.debug$T` are read and left behind, and no CodeView entry is written.
   * Exports: no `.edata`, no `/DLL`, no export directory.
-  * Delay-loaded imports, TLS directory, load-config directory, resources.
+  * Delay-loaded imports, TLS directory, resources. `.tls$` is folded into `.data` where
+    link.exe makes a `.tls` section and a TLS directory; nothing on the bed or in the corpus
+    uses thread storage, so the fold is untested rather than known to be right.
   * `/MERGE`, `/SECTION`, `/ALIGN` beyond the defaults, `/STUB`, `/ORDER`.
   * Short import members whose name type is not `IMPORT_NAME` - an ordinal-only import, or one
     whose imported name differs from its symbol name.
-  * Weak externals: the aux record is read and the fallback recorded, but nothing uses it.
   * The image checksum stays zero, as link.exe leaves it for an executable.
+
+COMDAT selection, weak externals, COMMON symbols, `/DEFAULTLIB` and `/ALTERNATENAME` from
+`.drectve`, the library search, the default entry point, `__ImageBase`, the sorted `.pdata` and
+the load-config directory were all on this list and are now in; the corpus is what will say
+whether they are right on more than the bed.
 
 ## Things that are this linker's own
 
