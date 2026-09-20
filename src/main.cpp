@@ -25,7 +25,38 @@ static bool eat(const std::string &a, const char *sw, std::string &val)
     return true;
 }
 
-static bool is_switch(const std::string &a) { return !a.empty() && (a[0] == '/' || a[0] == '-'); }
+/*  A `/` starts a switch - unless the argument names a file that exists, which on a POSIX
+ *  host is what a path looks like (the review's L17). */
+static bool is_switch(const std::string &a)
+{
+    if (a.empty() || (a[0] != '/' && a[0] != '-')) return false;
+    if (a[0] == '/') { FILE *f = fopen(a.c_str(), "rb"); if (f) { fclose(f); return false; } }
+    return true;
+}
+
+/* reserve[,commit], decimal or 0x-hex, as link.exe reads /stack: and /heap: */
+static void sizes(const std::string &v, u64 &reserve, u64 &commit)
+{
+    size_t comma = v.find(',');
+    std::string r = v.substr(0, comma);
+    if (!r.empty()) reserve = strtoull(r.c_str(), 0, 0);
+    if (comma != std::string::npos && comma + 1 < v.size()) commit = strtoull(v.c_str() + comma + 1, 0, 0);
+}
+
+/* the directories LIB names, split on ';' */
+static void lib_env(Options &o)
+{
+    const char *e = getenv("LIB");
+    if (!e) return;
+    std::string all = e;
+    size_t at = 0;
+    while (at <= all.size()) {
+        size_t semi = all.find(';', at);
+        if (semi == std::string::npos) semi = all.size();
+        if (semi > at) o.libpath.push_back(all.substr(at, semi - at));
+        at = semi + 1;
+    }
+}
 
 bool Link::run()
 {
@@ -48,8 +79,20 @@ int main(int argc, char **argv)
         if (eat(a, "entry:", v))      { lk.opt.entry = v; continue; }
         if (eat(a, "timestamp:", v))  { lk.opt.timestamp = (u32)strtoul(v.c_str(), 0, 16);
                                         lk.opt.have_timestamp = true; continue; }
-        if (eat(a, "subsystem:", v))  { lk.opt.subsystem = (v == "windows" || v == "WINDOWS") ? 2 : 3; continue; }
-        if (eat(a, "base:", v))       { lk.opt.image_base = strtoull(v.c_str(), 0, 0); continue; }
+        if (eat(a, "subsystem:", v))  {
+            std::string s;
+            for (size_t k = 0; k < v.size() && v[k] != ','; k++) s += (char)((v[k] >= 'A' && v[k] <= 'Z') ? v[k] - 'A' + 'a' : v[k]);
+            lk.opt.subsystem = s == "windows" ? 2 : s == "native" ? 1 : 3;
+            continue;
+        }
+        /* /base: is hexadecimal in link.exe's spelling, with or without 0x */
+        if (eat(a, "base:", v))       { lk.opt.image_base = strtoull(v.c_str(), 0, 16); continue; }
+        if (eat(a, "stack:", v))      { sizes(v, lk.opt.stack_reserve, lk.opt.stack_commit); continue; }
+        if (eat(a, "heap:", v))       { sizes(v, lk.opt.heap_reserve, lk.opt.heap_commit); continue; }
+        if (eat(a, "libpath:", v))    { lk.opt.libpath.push_back(v); continue; }
+        if (eat(a, "defaultlib:", v)) { lk.opt.defaultlibs.push_back(v); continue; }
+        if (eat(a, "nodefaultlib:", v)) { lk.opt.nodefaultlibs.push_back(v); continue; }
+        if (eat(a, "debug", v))       { lk.opt.debug = true; continue; }
         if (eat(a, "align:", v))      { lk.opt.section_align = (u32)strtoul(v.c_str(), 0, 0); continue; }
         if (eat(a, "filealign:", v))  { lk.opt.file_align = (u32)strtoul(v.c_str(), 0, 0); continue; }
         if (eat(a, "nodefaultlib", v)) { lk.opt.nodefaultlib = true; continue; }
@@ -57,8 +100,10 @@ int main(int argc, char **argv)
         if (eat(a, "dynamicbase", v))  { lk.opt.dynamicbase = true; continue; }
         if (eat(a, "verbose", v))      { lk.opt.verbose = true; continue; }
         if (eat(a, "nologo", v) || eat(a, "map", v) || eat(a, "incremental", v) ||
-            eat(a, "debug", v) || eat(a, "machine:", v) || eat(a, "opt:", v) ||
-            eat(a, "release", v) || eat(a, "manifest", v)) continue;
+            eat(a, "machine:", v) || eat(a, "opt:", v) || eat(a, "ignore:", v) ||
+            eat(a, "release", v) || eat(a, "manifest", v) || eat(a, "nxcompat", v) ||
+            eat(a, "largeaddressaware", v) || eat(a, "errorreport:", v) || eat(a, "pdb:", v) ||
+            eat(a, "tlbid:", v) || eat(a, "brepro", v)) continue;
         fprintf(stderr, "link: unknown switch %s\n", argv[i]);
         return 2;
     }
@@ -75,6 +120,10 @@ int main(int argc, char **argv)
         lk.opt.out = (d == std::string::npos ? s : s.substr(0, d)) + ".exe";
     }
     if (!lk.opt.have_timestamp) lk.opt.timestamp = (u32)time(0);
+    lib_env(lk.opt);                       /* after /libpath:, which is searched first */
+    if (lk.opt.debug)
+        fprintf(stderr, "link: /debug is accepted and does nothing yet - no .pdb is written, and the "
+                        ".debug$S sections are left behind\n");
 
     if (!lk.run()) {
         fprintf(stderr, "link: %s\n", lk.err.c_str());

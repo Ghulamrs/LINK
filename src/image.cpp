@@ -62,11 +62,11 @@ static void fill_own_records(Link &lk)
     std::string last;
     for (size_t i = 0; i < lk.all.size(); i++) {
         Contrib *c = lk.all[i];
-        if (c->name == last) continue;
+        if (c->size == 0 || c->name == last) continue;   /* an empty contribution names no run */
         last = c->name;
         u32 rva = c->rva, size = 0;
-        for (size_t j = i; j < lk.all.size() && lk.all[j]->name == last; j++)
-            size = (lk.all[j]->rva + lk.all[j]->size) - rva;
+        for (size_t j = i; j < lk.all.size() && (lk.all[j]->name == last || lk.all[j]->size == 0); j++)
+            if (lk.all[j]->size) size = (lk.all[j]->rva + lk.all[j]->size) - rva;
         wr32(&grp->data[at], rva);
         wr32(&grp->data[at + 4], size);
         size_t n = last.size() + 1;
@@ -147,8 +147,8 @@ bool Link::write_image()
     wr32(o + 64, 0);                          /* checksum: link.exe leaves it zero for an exe */
     wr16(o + 68, (u16)opt.subsystem);
     wr16(o + 70, (u16)(opt.fixed ? 0x8120 : 0x8160));
-    wr64(o + 72, 0x100000); wr64(o + 80, 0x1000);
-    wr64(o + 88, 0x100000); wr64(o + 96, 0x1000);
+    wr64(o + 72, opt.stack_reserve); wr64(o + 80, opt.stack_commit);
+    wr64(o + 88, opt.heap_reserve);  wr64(o + 96, opt.heap_commit);
     wr32(o + 104, 0);
     wr32(o + 108, 16);
 
@@ -163,6 +163,20 @@ bool Link::write_image()
     int ri = out_index(".reloc");
     if (ri >= 0 && outs[ri].virt_size) { wr32(d + 5 * 8, outs[ri].rva); wr32(d + 5 * 8 + 4, outs[ri].virt_size); }
     wr32(d + 6 * 8, mods.back().secs[0].rva); wr32(d + 6 * 8 + 4, 28);
+    /*  The load-config directory: the CRT's _load_config_used (libcmt's loadcfg.obj), whose
+     *  first word is its own size. Without it the loader runs the program all the same, and
+     *  the security cookie and CFG checks do not (the review's L15). */
+    {
+        std::map<std::string, std::pair<int, int> >::const_iterator it = resolved.find("_load_config_used");
+        u64 lc;
+        if (it != resolved.end() && sym_rva(it->second.first, it->second.second, lc)) {
+            const Symbol &s = mods[it->second.first].syms[it->second.second];
+            const Contrib &c = mods[it->second.first].secs[s.section - 1];
+            u32 sz = (s.value + 4 <= c.data.size()) ? rd32(&c.data[s.value]) : 0;
+            if (sz) { wr32(d + 10 * 8, (u32)lc); wr32(d + 10 * 8 + 4, sz); }
+        }
+        err.clear();
+    }
     group(*this, ".idata$5", rva, size);
     if (size) { wr32(d + 12 * 8, rva); wr32(d + 12 * 8 + 4, size); }
 

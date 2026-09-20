@@ -16,6 +16,14 @@ not by hint, and not by length - and with one DLL and three names there are too 
 tell a rule from a coincidence. Every other probe imports one name, where the question does not
 arise. A probe with two DLLs and five names each would settle it.
 
+**The coffgrp contribution's tail.** link.exe's `.rdata$zzzdbg` run is the coffgrp record
+(4 + the entries; that is what the debug directory's size says) plus, in p01, p02, p06, p07 and
+p11, sixteen zero bytes more - and in p03, p04, p05 and p08 nothing more. p04 and p06 have the
+same eleven names and the same record and differ in the tail, so the rule is not the record's
+size or its count. This linker writes the sixteen bytes always, matches the five, and is
+sixteen bytes long in the other four - every later address in `.rdata` shifted by that much,
+nothing a loader reads changed. What decides it is unread.
+
 ## Not implemented
 
 These have no probe, so there is nothing to be faithful to yet. Each is a refusal, not a

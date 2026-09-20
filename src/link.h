@@ -52,13 +52,24 @@ struct Reloc {
     u16 type;
 };
 
+/* COMDAT selection, from the section symbol's aux record */
+enum {
+    COMDAT_NONE = 0, COMDAT_NODUPLICATES = 1, COMDAT_ANY = 2, COMDAT_SAME_SIZE = 3,
+    COMDAT_EXACT_MATCH = 4, COMDAT_ASSOCIATIVE = 5, COMDAT_LARGEST = 6
+};
+
+/* a weak external's characteristics: whether the libraries are searched for its name */
+enum { WEAK_NOLIBRARY = 1, WEAK_LIBRARY = 2, WEAK_ALIAS = 3 };
+
 struct Symbol {
     std::string name;
     u32  value;
-    int  section;   /* 1-based COFF section number; 0 undefined, -1 absolute, -2 debug */
+    int  section;   /* 1-based COFF section number; 0 undefined, -1 absolute, -2 debug,
+                       -3 the image base (the linker's own __ImageBase) */
     u8   storage;
     u8   naux;
     int  aux_tag;   /* weak external: the symbol index to fall back on, else -1 */
+    u32  weak_kind; /* weak external: WEAK_* */
 };
 
 /*  One input section. `name` keeps its `$` suffix: the suffix is what orders the
@@ -72,7 +83,11 @@ struct Contrib {
     std::vector<Reloc> relocs;
     int  module;              /* index into Link::mods */
     int  serial;              /* the order this contribution was read in: the tie-break */
-    bool dropped;             /* .debug$*, .drectve, LNK_REMOVE - read, then left behind */
+    bool dropped;             /* .debug$*, .drectve, LNK_REMOVE, a COMDAT that lost - read, then left behind */
+    u8   select;              /* COMDAT_*: how a second definition of its symbol is settled */
+    int  assoc;               /* COMDAT_ASSOCIATIVE: the 1-based section this one follows */
+    u32  checksum;            /* the aux record's, for EXACT_MATCH */
+    int  comdat_sym;          /* the COMDAT symbol's index, -1 when the section has none */
     int  out;                 /* output section index, -1 until placed */
     u32  rva;
     u32  fileoff;             /* 0 for a contribution with no bytes in the file */
@@ -87,6 +102,7 @@ struct Module {
     std::vector<Symbol>  syms;
     u32  compid;
     bool from_archive;
+    int  lib;                    /* the input the member came from, in search order; -1 for an object */
 };
 
 struct OutSection {
@@ -109,6 +125,9 @@ struct Options {
     std::string out;
     std::string entry;
     std::vector<std::string> inputs;     /* objects and archives, in command-line order */
+    std::vector<std::string> libpath;    /* /libpath: then LIB, the directories a bare .lib is looked for in */
+    std::vector<std::string> defaultlibs;    /* /defaultlib: from the command line */
+    std::vector<std::string> nodefaultlibs;  /* /nodefaultlib:name - those names, ignored wherever met */
     bool nodefaultlib;
     bool fixed;                          /* /fixed: no .reloc, no dynamic base */
     bool dynamicbase;
@@ -118,6 +137,9 @@ struct Options {
     u64  image_base;
     u32  section_align;
     u32  file_align;
+    u64  stack_reserve, stack_commit;    /* /stack:reserve[,commit] */
+    u64  heap_reserve, heap_commit;      /* /heap:reserve[,commit] */
+    bool debug;                          /* /debug: accepted, and said to be ignored */
     bool verbose;
     Options();
 };
@@ -130,7 +152,7 @@ struct Link {
     std::vector<Contrib*> all;        /* every placed contribution, in layout order */
     std::vector<OutSection> outs;
     std::map<std::string, std::pair<int, int> > resolved;   /* name -> module, symbol */
-    std::vector<u32> base_relocs;     /* the RVAs an ADDR64 left needing a DIR64 */
+    std::vector<std::pair<u32, u16> > base_relocs;   /* RVA and type: DIR64 for an ADDR64, HIGHLOW for an ADDR32 */
     std::vector<u8>  reloc_data;      /* .reloc, once those are known */
     u32 entry_rva;
     u32 size_of_image;
@@ -147,12 +169,14 @@ struct Link {
     bool fix_up();
     bool write_image();
     bool sym_rva(int mod, int sym, u64 &rva);
+    void sort_pdata();
     int  out_index(const std::string &name) const;
 };
 
 /* layout.cpp */
 u32 rich_count(const Link &lk, std::vector<std::pair<u32, u32> > &ents);
 u32 rich_lfanew(const Link &lk);
+std::string find_library(const Options &o, const std::string &name);
 
 /* coff.cpp */
 bool coff_read(const u8 *p, size_t n, const std::string &name, Module &m, std::string &err);
@@ -164,6 +188,8 @@ struct Archive {
     std::vector<u8> bytes;
     std::vector<std::pair<std::string, u32> > index;   /* symbol -> member offset */
     std::vector<u32> taken;                            /* member offsets already pulled */
+    size_t longnames_at;                               /* the `//` member's data, 0 when there is none */
+    Archive() : longnames_at(0) {}
     bool load(const std::string &path, std::string &err);
     bool member(u32 off, const std::string &archname, Module &m, std::string &err) const;
 };

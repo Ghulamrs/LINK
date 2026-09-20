@@ -50,6 +50,16 @@ bool Archive::load(const std::string &path, std::string &err)
         index.push_back(std::make_pair(s, be32(offs + 4 * i)));
         names += s.size() + 1;
     }
+    /* the longnames member, `//`, when there is one: after the second linker member */
+    longnames_at = 0;
+    size_t q = p + 60 + msize; if (q & 1) q++;
+    for (int k = 0; k < 2 && q + 60 <= bytes.size(); k++) {
+        const u8 *mh = &bytes[q];
+        char sz[11]; memcpy(sz, mh + 48, 10); sz[10] = 0;
+        u32 ms = (u32)strtoul(sz, 0, 10);
+        if (mh[0] == '/' && mh[1] == '/') { longnames_at = q + 60; break; }
+        q += 60 + ms; if (q & 1) q++;
+    }
     return true;
 }
 
@@ -68,6 +78,7 @@ static void short_import(const u8 *d, u32 dsize, const std::string &archname, Mo
     m.name = archname + "(" + sym + ")";
     m.compid = 0x00010000u;          /* a short member carries no @comp.id: unmarked */
     m.from_archive = true;
+    m.lib = -1;                      /* the caller says which library */
 
     bool code = (type == 0);
     m.secs.resize(code ? 4 : 3);
@@ -90,9 +101,13 @@ static void short_import(const u8 *d, u32 dsize, const std::string &archname, Mo
         c.flags = SCN_CNT_INITDATA | SCN_MEM_READ | SCN_MEM_WRITE | 0x00400000u;  /* 8-byte align */
         c.data.assign(8, 0);
         c.size = 8;
+        c.dropped = false; c.module = -1; c.serial = 0; c.out = -1; c.rva = 0; c.fileoff = 0;
+        c.select = COMDAT_NONE; c.assoc = 0; c.checksum = 0; c.comdat_sym = -1;
         Reloc r; r.offset = 0; r.sym = 2; r.type = REL_ADDR32NB;   /* syms[2] labels $6 */
         c.relocs.push_back(r);
     }
+    hn.dropped = false; hn.module = -1; hn.serial = 0; hn.out = -1; hn.rva = 0; hn.fileoff = 0;
+    hn.select = COMDAT_NONE; hn.assoc = 0; hn.checksum = 0; hn.comdat_sym = -1;
 
     /*  The thunk. Six bytes of `jmp qword ptr [rip+d]` reaching the IAT word, which is what
      *  the bed found link.exe appending to .text for every imported routine a call names. */
@@ -103,12 +118,14 @@ static void short_import(const u8 *d, u32 dsize, const std::string &archname, Mo
         t.data.assign(6, 0);
         t.data[0] = 0xFF; t.data[1] = 0x25;
         t.size = 6;
+        t.dropped = false; t.module = -1; t.serial = 0; t.out = -1; t.rva = 0; t.fileoff = 0;
+        t.select = COMDAT_NONE; t.assoc = 0; t.checksum = 0; t.comdat_sym = -1;
         Reloc r; r.offset = 2; r.sym = 0; r.type = REL_REL32;      /* syms[0] is __imp_<sym> */
         t.relocs.push_back(r);
     }
 
     Symbol s;
-    s.value = 0; s.storage = SYM_EXTERNAL; s.naux = 0; s.aux_tag = -1;
+    s.value = 0; s.storage = SYM_EXTERNAL; s.naux = 0; s.aux_tag = -1; s.weak_kind = 0;
     s.name = std::string("__imp_") + sym; s.section = 2;   /* the $5 word */
     m.syms.push_back(s);
     s.name = std::string("__IMPORT_DESCRIPTOR_") + std::string(dll, strcspn(dll, "."));
@@ -135,10 +152,24 @@ bool Archive::member(u32 off, const std::string &archname, Module &m, std::strin
         short_import(d, msize, archname, m);
         return true;
     }
-    /* an ordinary object: its member name is only for diagnostics */
+    /* an ordinary object: its member name is only for diagnostics. A name of the form /nnn
+       is an offset into the longnames member `//`, which the CRT libraries use throughout. */
     char nm[17]; memcpy(nm, h, 16); nm[16] = 0;
-    char *sl = strchr(nm, '/'); if (sl) *sl = 0;
-    std::string mname = archname + "(" + nm + ")";
+    std::string leaf;
+    if (nm[0] == '/' && nm[1] >= '0' && nm[1] <= '9') {
+        u32 at = (u32)strtoul(nm + 1, 0, 10);
+        if (longnames_at && longnames_at + at < bytes.size()) {
+            const char *s = (const char *)&bytes[longnames_at + at];
+            size_t n = 0;
+            while (longnames_at + at + n < bytes.size() && s[n] && s[n] != '/' && s[n] != '\n') n++;
+            leaf.assign(s, n);
+        }
+    }
+    if (leaf.empty()) {
+        char *sl = strchr(nm, '/'); if (sl) *sl = 0;
+        leaf = nm;
+    }
+    std::string mname = archname + "(" + leaf + ")";
     if (!coff_read(d, msize, mname, m, err)) return false;
     m.from_archive = true;
     return true;
