@@ -130,6 +130,8 @@ int main(int argc, char **argv)
         return 1;
     }
     if (lk.opt.verbose) {
+        for (size_t i = 0; i < lk.mods.size(); i++)
+            printf("module %s%s\n", lk.mods[i].name.c_str(), lk.mods[i].from_archive ? " (archive)" : "");
         for (size_t i = 0; i < lk.outs.size(); i++)
             printf("%-8s rva %08x  virtual %6x  raw %6x at %6x\n",
                    lk.outs[i].name.c_str(), lk.outs[i].rva, lk.outs[i].virt_size,

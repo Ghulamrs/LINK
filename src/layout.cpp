@@ -121,6 +121,8 @@ struct World {
     std::map<std::string, std::pair<int, int> > defined;   /* name -> module, symbol */
     std::vector<std::string> undef;                        /* still wanted, in first-asked order */
     std::map<std::string, bool> asked;
+    std::map<std::string, int> asker;                      /* verbose: the module that first asked for a name */
+    int taking;
     std::map<std::string, bool> nosearch;                  /* weak externals that must not pull members */
     std::map<std::string, std::string> alternate;          /* /ALTERNATENAME:X=Y: X -> Y */
     std::map<std::string, std::pair<int, int> > weak;      /* name -> the module and aux symbol to fall back on */
@@ -130,9 +132,19 @@ struct World {
     std::map<std::string, std::pair<int, int> > comdat;    /* COMDAT symbol -> the contribution that holds it */
 };
 
+/*  A name ending in _$fo$ is link.exe's function-override hook (the CRT's memcpy_$fo$,
+ *  _guard_dispatch_icall_$fo$): p12 showed it neither searched for nor given its
+ *  /alternatename, but resolved to zero - a call to it lands on the image base. The members
+ *  that define such names (overrides.obj, cfg_fo.obj) are never pulled, and in the CRT no
+ *  relocation refers to the name anyway. So: no search, and absolute zero at the end. */
+bool is_override_hook(const std::string &nm)
+{
+    return nm.size() >= 5 && nm.compare(nm.size() - 5, 5, "_$fo$") == 0;
+}
+
 void want(World &w, const std::string &name)
 {
-    if (!w.asked[name]) { w.asked[name] = true; w.undef.push_back(name); }
+    if (!w.asked[name]) { w.asked[name] = true; w.undef.push_back(name); w.asker[name] = w.taking; }
 }
 
 /*  .drectve: the options an object hands the linker. /DEFAULTLIB and /ALTERNATENAME decide
@@ -227,6 +239,7 @@ bool take_module(World &w, const Module &m0, std::string &err)
     int mi = (int)w.lk->mods.size();
     w.lk->mods.push_back(m0);
     Module &m = w.lk->mods[mi];
+    w.taking = mi;
 
     for (size_t si = 0; si < m.secs.size(); si++)
         if (m.secs[si].name == ".drectve") read_directives(w, m.secs[si]);
@@ -277,11 +290,17 @@ bool take_module(World &w, const Module &m0, std::string &err)
         } else if (s.section == -1 || s.section == -3) {
             if (w.defined.find(s.name) == w.defined.end()) w.defined[s.name] = std::make_pair(mi, (int)i);
         } else if (s.section == 0 && s.value == 0) {
+            if (is_override_hook(s.name)) w.nosearch[s.name] = true;   /* p12: never searched for */
             want(w, s.name);
         } else if (s.section == 0) {
-            /* COMMON: undefined with a size; the largest wins, allocated at the end */
+            /*  COMMON: undefined with a size; the largest wins, allocated at the end. It is a
+             *  definition of a kind, so the archives are not searched for the name - p13:
+             *  link.exe leaves the member that defines cval alone until something else pulls
+             *  it, and then that definition wins (libcmt's _tls_index, __dyn_tls_init_callback
+             *  and __scrt_ucrt_dll_is_in_use each have such a member, none of them in hello). */
             std::map<std::string, std::pair<u32, int> >::iterator it = w.common.find(s.name);
             if (it == w.common.end() || it->second.first < s.value) w.common[s.name] = std::make_pair(s.value, mi);
+            w.nosearch[s.name] = true;
             want(w, s.name);
         }
     }
@@ -307,13 +326,19 @@ bool pull_pass(World &w, std::string &err, bool &took)
                 if (ar.index[k].first != nm) continue;
                 u32 off = ar.index[k].second;
                 if (std::find(ar.taken.begin(), ar.taken.end(), off) != ar.taken.end()) break;
-                if (std::find(pull.begin(), pull.end(), off) == pull.end()) pull.push_back(off);
+                if (std::find(pull.begin(), pull.end(), off) == pull.end()) {
+                    pull.push_back(off);
+                    if (w.lk->opt.verbose) fprintf(stderr, "pull %s <- %s%s%s asked by %s\n", ar.name.c_str(), nm.c_str(),
+                        w.alternate.count(nm) ? " [alternate]" : "", w.weak.count(nm) ? " [weak]" : "",
+                        w.asker[nm] >= 0 ? w.lk->mods[w.asker[nm]].name.c_str() : "?");
+                }
                 break;
             }
         }
         for (size_t k = 0; k < pull.size(); k++) {
             Module m;
             if (!ar.member(pull[k], ar.name, m, err)) return false;
+            if (w.lk->opt.verbose) fprintf(stderr, "took %s\n", m.name.c_str());
             m.lib = (int)a;
             ar.taken.push_back(pull[k]);
             if (!take_module(w, m, err)) return false;
@@ -414,7 +439,7 @@ bool Link::read_inputs()
     for (size_t i = 0; i < ins.size(); i++)
         if (!ins[i].ok) { err = ins[i].err; return false; }
 
-    World w; w.lk = this; w.ins = &ins;
+    World w; w.lk = this; w.ins = &ins; w.taking = -1;
     for (size_t i = 0; i < opt.nodefaultlibs.size(); i++) w.refused[leaf_lower(opt.nodefaultlibs[i])] = true;
     for (size_t i = 0; i < opt.defaultlibs.size(); i++) w.defaultlibs.push_back(opt.defaultlibs[i]);
 
@@ -474,6 +499,19 @@ bool Link::read_inputs()
             c.size += sz;
         }
         if (c.size) { m.secs.push_back(c); if (!take_module(w, m, err)) return false; }
+    }
+
+    /* the function-override hooks (is_override_hook): absolute zero, as link.exe leaves them */
+    {
+        Module m; m.name = "*override*"; m.compid = 0xFFFFFFFFu; m.from_archive = false; m.lib = -1;
+        for (size_t u = 0; u < w.undef.size(); u++) {
+            const std::string &nm = w.undef[u];
+            if (w.defined.find(nm) != w.defined.end() || !is_override_hook(nm)) continue;
+            Symbol s; s.name = nm; s.value = 0; s.section = -1; s.storage = SYM_EXTERNAL;
+            s.naux = 0; s.aux_tag = -1; s.weak_kind = 0;
+            m.syms.push_back(s);
+        }
+        if (!m.syms.empty() && !take_module(w, m, err)) return false;
     }
 
     std::vector<std::string> missing;
