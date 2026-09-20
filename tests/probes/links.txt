@@ -20,3 +20,25 @@ p09-twodll|/entry:start /nodefaultlib kernel32.lib user32.lib|p09-twodll
 p10-rich-odd|/entry:start /nodefaultlib|p01-bare p10-unmarked-my
 ; p11: /stack:8388608, as cxx1i's link line asks
 p11-stack|/entry:start /nodefaultlib /stack:8388608|p11-stack
+; p07: an archive of two members, only one of which resolves anything - the member that
+; resolves something is pulled in whole, the other is never opened
+p07-lib|/entry:start /nodefaultlib p07.lib kernel32.lib|p07-lib-main
+; p12: two undefined names with /alternatename in .drectve, and an archive defining both -
+; whether the archive is searched for a name that has an alternate, plain and _$fo$ spelling
+p12-alt|/entry:start /nodefaultlib p12.lib|p12-alt-main
+; p13: a COMMON symbol against an archive member that defines it - alone, and beside a call
+; that pulls the member anyway
+p13-common-a|/entry:start /nodefaultlib p13.lib|p13-common-main
+p13-common-b|/entry:start /nodefaultlib p13.lib|p13-common-call
+; p14: three DLLs, four names each. p03 showed the first library's thunks with the
+; first-referenced name moved to the end and p09 showed the second library's in reference order
+; with nothing moved; a third library says whether the rule is about the first library, the
+; first name, or neither. Needs advapi32.lib beside the other two in tests/ref.
+p14-threedll|/entry:start /nodefaultlib kernel32.lib user32.lib advapi32.lib|p14-threedll
+; p15: p03's three names referred to in the opposite order. If "the first-referenced name goes
+; last" is the rule, the ILT comes out WriteFile, GetStdHandle, ExitProcess and nothing else.
+p15-reorder|/entry:start /nodefaultlib kernel32.lib|p15-reorder
+; p16: two objects with no @comp.id beside one ml64 object - four Rich entries with an unmarked
+; count of two, which is the shape the set is missing for the order rule and for e_lfanew's
+; reserve, neither of which fits p09 or p10 (docs/known.md).
+p16-rich-pair|/entry:start /nodefaultlib|p01-bare p10-unmarked-my p16-rich-pair-my

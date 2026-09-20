@@ -3,6 +3,7 @@ build/
 # Microsoft's import library, brought back by tests/probes.sh for the bed; not ours to check in
 tests/ref/kernel32.lib
 tests/ref/user32.lib
+tests/ref/advapi32.lib
 link.xcodeproj/project.xcworkspace/
 link.xcodeproj/xcuserdata/
 x64/

@@ -1,0 +1,5 @@
+; Each line is one archive lib.exe makes before the links: the archive's name | its members.
+; p07's archive was the first; probe.cmd used to name it in its own text.
+p07|p07-lib-used p07-lib-unused
+p12|p12-lib-foo p12-lib-fo
+p13|p13-lib

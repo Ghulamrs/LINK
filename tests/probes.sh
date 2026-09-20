@@ -15,13 +15,13 @@ COPYFILE_DISABLE=1 tar -C . --no-xattrs -czf "$T/tree.tgz" tests || exit 1
 W=$(echo "$ROOT" | sed 's|/|\\|g')        # the same place in cmd's spelling
 ssh -n -o BatchMode=yes "$BOX" "if not exist $W mkdir $W" > /dev/null || exit 1
 scp -q "$T/tree.tgz" "$BOX:$ROOT/tree.tgz" || exit 1
-ssh -n -o BatchMode=yes "$BOX" "cd /d $W & tar xzf tree.tgz & $W\\tests\\windows\\probe.cmd $W"
+perl -e 'alarm 1800; exec @ARGV' ssh -n -o BatchMode=yes "$BOX" "cd /d $W & tar xzf tree.tgz & $W\\tests\\windows\\probe.cmd $W"
 rc=$?
 scp -q "$BOX:$ROOT/build/probe/*" "$T/" || exit 1
 [ $rc = 0 ] || echo "probes.sh: the box reported a failure - read the .ml64, .link and .lib.log files"
-# the objects, the archive, the import library and the images the linker is held to: the bed
+# the objects, the probe archives, the import library and the images the linker is held to: the bed
 # under tests/ref is what `make test` reads, and it is only as current as the last probe run
-for f in "$T"/*.obj "$T"/*.exe "$T"/*.exe.txt "$T"/p07.lib "$T"/kernel32.lib "$T"/user32.lib; do
+for f in "$T"/*.obj "$T"/*.exe "$T"/*.exe.txt "$T"/p[0-9][0-9].lib "$T"/kernel32.lib "$T"/user32.lib "$T"/advapi32.lib; do
     [ -e "$f" ] && cp "$f" tests/ref/
 done
 

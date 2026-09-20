@@ -68,8 +68,6 @@ one() {
 sed 's/;.*//' tests/probes/links.txt | grep '|' | while IFS='|' read -r n f o; do
     echo "$n|$f|$o"
 done > "$OUT/links"
-# p07 is not in links.txt: probe.cmd builds its archive first, so it names its own link
-echo "p07-lib|/entry:start /nodefaultlib p07.lib kernel32.lib|p07-lib-main" >> "$OUT/links"
 
 while IFS='|' read -r n f o; do
     [ -n "$n" ] && one "$n" "$f" "$o"

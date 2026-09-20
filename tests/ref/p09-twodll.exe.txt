@@ -8,7 +8,7 @@ File Type: EXECUTABLE IMAGE
 FILE HEADER VALUES
             8664 machine (x64)
                3 number of sections
-        6AB00D96 time date stamp Sun Sep 20 21:45:10 2026
+        6AB02656 time date stamp Sun Sep 20 23:30:46 2026
                0 file pointer to symbol table
                0 number of symbols
               F0 size of optional header
@@ -113,7 +113,7 @@ RAW DATA #2
   0000000140002040: 78 22 00 00 00 00 00 00 86 22 00 00 00 00 00 00  x"......."......
   0000000140002050: 94 22 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ."..............
   0000000140002060: 74 77 6F 20 64 6C 6C 73 0A 00 00 00 00 00 00 00  two dlls........
-  0000000140002070: 96 0D B0 6A 00 00 00 00 0D 00 00 00 CC 00 00 00  ..°j........Ì...
+  0000000140002070: 56 26 B0 6A 00 00 00 00 0D 00 00 00 CC 00 00 00  V&°j........Ì...
   0000000140002080: A0 20 00 00 A0 06 00 00 18 00 00 00 00 80 00 80  . ..............
   0000000140002090: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
   00000001400020A0: 00 00 00 00 00 10 00 00 AF 00 00 00 2E 74 65 78  ........¯....tex
@@ -154,7 +154,7 @@ RAW DATA #2
 
         Time Type        Size      RVA  Pointer
     -------- ------- -------- -------- --------
-    6AB00D96 coffgrp       CC 000020A0      6A0
+    6AB02656 coffgrp       CC 000020A0      6A0
 
   Section contains the following imports:
 
