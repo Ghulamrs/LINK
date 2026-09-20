@@ -21,6 +21,7 @@ are; what is shared is the design, not a library.
     src/main.cpp        the command line, in link.exe's spelling
     tests/ref/          the objects, the archive and the images link.exe made: the bed's input
     tests/run.sh        links every probe again and compares the image byte for byte
+    tests/bad.sh        what the linker says when it will not make an image at all
     tests/probes/       the oracle probes: the smallest input that forces one PE feature each
     tests/windows/      what has to run on the Windows box (ml64, link, lib, dumpbin)
     tests/probes.sh     ships the probes to the box, runs them, brings the results back
@@ -30,12 +31,13 @@ are; what is shared is the design, not a library.
 ## Building and testing
 
     make                                    -> build/link.exe
-    make test                               -> tests/run.sh
+    make test                               -> tests/run.sh, then tests/bad.sh
 
 The test is the comparison: each probe is linked again from the objects in `tests/ref` and the
 image is held against link.exe's, byte for byte, with `/timestamp:` pinning the one field no
 test could otherwise predict. `run.sh` exits 1 if an image differed and 2 if a probe had to be
-skipped for want of an input.
+skipped for want of an input. `bad.sh` asks the other question - what the linker says when it
+refuses - and makes every input it needs on the spot, so it runs anywhere.
 
 One input is not ours to check in: `kernel32.lib` is Microsoft's, and p02 through p08 all link
 against it. Until it is beside the objects only p01 can be compared here. One run of

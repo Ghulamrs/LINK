@@ -14,7 +14,18 @@ writes the hint/name blobs in reference order and the ILT and IAT words in the o
 ExitProcess, GetStdHandle. Nothing in the bed says what that order is - it is not alphabetical,
 not by hint, and not by length - and with one DLL and three names there are too few points to
 tell a rule from a coincidence. Every other probe imports one name, where the question does not
-arise. A probe with two DLLs and five names each would settle it.
+arise.
+
+p09 was that probe - two DLLs, five names each - and it did not settle it. kernel32's words come
+out WriteFile, ExitProcess, GetLastError, Sleep, GetStdHandle where the object refers to them
+GetStdHandle first: the first-referenced name moved to the end, exactly as in p03. user32's come
+out in reference order, GetDesktopWindow first, with nothing moved. So the first library's run
+is rotated and the second's is not, and the member offsets in kernel32.lib are in neither order
+(ExitProcess 0x2DA6A, GetLastError 0x33FC2, GetStdHandle 0x3742C, Sleep 0x47A30, WriteFile
+0x4AD96). A rule that fits both would still be fitting two points. A probe with three DLLs, and
+one with the first DLL's names referred to in another order, are what is left to try. Until
+then this linker writes reference order throughout: p03 differs by nine bytes and p09 by ten in
+the IAT, and both run, since every word still reaches its own hint/name blob.
 
 **The Rich header: the entry values are settled, the order and the reserve are not.** p10 links
 an ml64 object beside a masm object that carries no `@comp.id`, and link.exe writes three
