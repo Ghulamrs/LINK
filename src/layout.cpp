@@ -23,7 +23,7 @@
 #include <thread>
 
 Options::Options()
-    : entry(), nodefaultlib(false), fixed(false), dynamicbase(true),
+    : entry(), optref(true), optref_said(false), nodefaultlib(false), fixed(false), dynamicbase(true),
       timestamp(0), have_timestamp(false), subsystem(3),
       image_base(0x140000000ull), section_align(0x1000), file_align(0x200),
       stack_reserve(0x100000), stack_commit(0x1000), heap_reserve(0x100000), heap_commit(0x1000),
@@ -130,6 +130,8 @@ struct World {
     std::vector<std::string> defaultlibs;                  /* /DEFAULTLIB names, in the order met */
     std::map<std::string, bool> refused;                   /* /nodefaultlib:name, lowered */
     std::map<std::string, std::pair<int, int> > comdat;    /* COMDAT symbol -> the contribution that holds it */
+    std::vector<std::pair<int, int> > pending;             /* live sections whose references are still to be followed */
+    std::map<std::string, bool> optional;                  /* names the linker asks for on its own account: no error when nothing has them */
 };
 
 /*  A name ending in _$fo$ is link.exe's function-override hook (the CRT's memcpy_$fo$,
@@ -144,7 +146,65 @@ bool is_override_hook(const std::string &nm)
 
 void want(World &w, const std::string &name)
 {
+    if (is_override_hook(name)) w.nosearch[name] = true;
     if (!w.asked[name]) { w.asked[name] = true; w.undef.push_back(name); w.asker[name] = w.taking; }
+}
+
+/*  What the image keeps is decided by reference once everything is loaded - link.exe's
+ *  /OPT:REF, on unless /OPT:NOREF or /DEBUG says otherwise. A section is live when it is not
+ *  a COMDAT, when it defines a name the linker itself asked for (the entry, an /include:,
+ *  _load_config_used), when a live section refers to a symbol in it, or when it is
+ *  ASSOCIATIVE to a live one; a COMDAT nothing reaches is left out. The archives are searched
+ *  first, for every undefined name of every module loaded, whether or not the section that
+ *  asks survives: the corpus said so - link.exe's hello carries undname.obj's string literals
+ *  and tables though __unDName is named only from a COMDAT that ends up dead, and
+ *  get_qualified_locale.obj's copy of a pooled string won its ANY selection there, so that
+ *  member was pulled, from a reference that never reached the image. Asking only for what
+ *  live sections name gave an image 157 members where the oracle has 169. */
+void mark_live(World &w, int mi, int si)
+{
+    Module &m = w.lk->mods[mi];
+    if (si < 0 || (size_t)si >= m.secs.size()) return;
+    Contrib &c = m.secs[si];
+    if (c.dropped || c.live) return;
+    c.live = true;
+    w.pending.push_back(std::make_pair(mi, si));
+    for (size_t k = 0; k < m.secs.size(); k++)
+        if (m.secs[k].select == COMDAT_ASSOCIATIVE && m.secs[k].assoc == si + 1) mark_live(w, mi, (int)k);
+}
+
+/* a definition's section, live */
+void mark_defined_live(World &w, const std::pair<int, int> &def)
+{
+    const Symbol &s = w.lk->mods[def.first].syms[def.second];
+    if (s.section > 0) mark_live(w, def.first, s.section - 1);
+}
+
+/*  Every relocation out of the sections marked since the last drain: a symbol in a section of
+ *  the same module makes that section live; an external is the definition that won, live, or
+ *  a name to ask for. A static in a section that lost is not followed - nothing outside its
+ *  own COMDAT group refers to one. */
+void drain(World &w)
+{
+    while (!w.pending.empty()) {
+        std::pair<int, int> at = w.pending.back();
+        w.pending.pop_back();
+        for (size_t r = 0; r < w.lk->mods[at.first].secs[at.second].relocs.size(); r++) {
+            const Module &m = w.lk->mods[at.first];
+            const Reloc &rl = m.secs[at.second].relocs[r];
+            if (rl.sym >= m.syms.size()) continue;
+            const Symbol &s = m.syms[rl.sym];
+            if (s.section > 0) {
+                if (!m.secs[s.section - 1].dropped) { mark_live(w, at.first, s.section - 1); continue; }
+            } else if (s.section != 0) {
+                continue;                                   /* absolute, debug, the image base */
+            }
+            if (s.storage != SYM_EXTERNAL && s.storage != SYM_WEAK_EXTERNAL) continue;
+            if (s.name.empty()) continue;
+            std::map<std::string, std::pair<int, int> >::iterator d = w.defined.find(s.name);
+            if (d != w.defined.end()) mark_defined_live(w, d->second);
+        }
+    }
 }
 
 /*  .drectve: the options an object hands the linker. /DEFAULTLIB and /ALTERNATENAME decide
@@ -176,6 +236,8 @@ void read_directives(World &w, const Contrib &c)
             bool seen = false;
             for (size_t i = 0; i < w.defaultlibs.size() && !seen; i++) seen = leaf_lower(w.defaultlibs[i]) == l;
             if (!seen) w.defaultlibs.push_back(bare);
+        } else if (key == "include" && !bare.empty()) {
+            want(w, bare);                                  /* a reference the module makes without a relocation */
         } else if (key == "alternatename") {
             size_t eq = bare.find('=');
             if (eq != std::string::npos && eq > 0 && eq + 1 < bare.size() &&
@@ -226,8 +288,10 @@ bool settle_comdat(World &w, int mi, int si, std::string &err)
     default: break;
     }
     if (keep_old) { drop_with_associates(m, si); return true; }
+    bool was_live = oc.live;
     drop_with_associates(om, it->second.second);
     it->second = std::make_pair(mi, si);
+    if (was_live) mark_live(w, mi, si);
     /* the symbol now belongs to the new section */
     std::map<std::string, std::pair<int, int> >::iterator d = w.defined.find(name);
     if (d != w.defined.end()) d->second = std::make_pair(mi, c.comdat_sym);
@@ -262,10 +326,11 @@ bool take_module(World &w, const Module &m0, std::string &err)
         const Symbol &s = m.syms[i];
         if (s.name.empty()) continue;
         if (s.storage == SYM_WEAK_EXTERNAL) {
-            /*  A weak external asks for its name; when nothing defines it, the aux symbol's
-             *  definition stands in. NOLIBRARY says the archives are not to be searched for
-             *  it - the CRT's optional hooks are spelled that way, and pulling members for
-             *  them would drag in what the program did not ask for. */
+            /*  A weak external, once a live section refers to it, asks for its name; when
+             *  nothing defines it, the aux symbol's definition stands in. NOLIBRARY says the
+             *  archives are not to be searched for it - the CRT's optional hooks are spelled
+             *  that way, and pulling members for them would drag in what the program did
+             *  not ask for. */
             if (w.weak.find(s.name) == w.weak.end() && s.aux_tag >= 0)
                 w.weak[s.name] = std::make_pair(mi, s.aux_tag);
             if (s.weak_kind == WEAK_NOLIBRARY) w.nosearch[s.name] = true;
@@ -290,7 +355,6 @@ bool take_module(World &w, const Module &m0, std::string &err)
         } else if (s.section == -1 || s.section == -3) {
             if (w.defined.find(s.name) == w.defined.end()) w.defined[s.name] = std::make_pair(mi, (int)i);
         } else if (s.section == 0 && s.value == 0) {
-            if (is_override_hook(s.name)) w.nosearch[s.name] = true;   /* p12: never searched for */
             want(w, s.name);
         } else if (s.section == 0) {
             /*  COMMON: undefined with a size; the largest wins, allocated at the end. It is a
@@ -308,8 +372,11 @@ bool take_module(World &w, const Module &m0, std::string &err)
 }
 
 /*  One pass over the archives: every member the current undefined set names is taken, and
- *  the members taken may ask for more, which the next pass answers. Returns whether
- *  anything was taken. */
+ *  the members taken may ask for more. An archive is searched again for what its own
+ *  members just asked before the next archive is opened - link.exe's order, and the one
+ *  that decides which of two libraries' guard_support.obj an image gets: loadcfg.obj asks
+ *  for __guard_check_icall_fptr, and libcmt, where loadcfg.obj came from, answers before
+ *  libucrt is looked at. Returns whether anything was taken. */
 bool pull_pass(World &w, std::string &err, bool &took)
 {
     took = false;
@@ -317,6 +384,7 @@ bool pull_pass(World &w, std::string &err, bool &took)
     for (size_t a = 0; a < ins.size(); a++) {
         if (!ins[a].is_archive) continue;
         Archive &ar = ins[a].arch;
+      for (;;) {
         std::vector<u32> pull;
         for (size_t u = 0; u < w.undef.size(); u++) {
             const std::string &nm = w.undef[u];
@@ -335,6 +403,7 @@ bool pull_pass(World &w, std::string &err, bool &took)
                 break;
             }
         }
+        if (pull.empty()) break;
         for (size_t k = 0; k < pull.size(); k++) {
             Module m;
             if (!ar.member(pull[k], ar.name, m, err)) return false;
@@ -344,6 +413,7 @@ bool pull_pass(World &w, std::string &err, bool &took)
             if (!take_module(w, m, err)) return false;
             took = true;
         }
+      }
     }
     return true;
 }
@@ -457,15 +527,39 @@ bool Link::read_inputs()
         opt.entry = opt.subsystem == 2 ? (wide ? "wWinMainCRTStartup" : "WinMainCRTStartup")
                                        : (wide ? "wmainCRTStartup" : "mainCRTStartup");
     }
-    want(w, opt.entry);
+    /*  The linker's own references, which are also what keeps a COMDAT alive with nothing
+     *  else pointing at it: the entry, every /include:, and _load_config_used - asked for by
+     *  link.exe itself (libcmt's loadcfg.obj is in every corpus image and nothing in the
+     *  objects names it), and asked for quietly: the probes link /nodefaultlib against
+     *  kernel32.lib alone, and nothing is said when no library has it. */
+    std::vector<std::string> roots;
+    roots.push_back(opt.entry);
+    for (size_t i = 0; i < opt.includes.size(); i++) roots.push_back(opt.includes[i]);
+    roots.push_back("_load_config_used");
+    w.optional["_load_config_used"] = true;
+    for (size_t i = 0; i < roots.size(); i++) want(w, roots[i]);
 
     /*  __ImageBase is the linker's: the image base itself, RVA 0. An ADDR64 to it gets the
-     *  base, an ADDR32NB 0 - which is what section -3 means to sym_rva. */
+     *  base, an ADDR32NB 0 - which is what section -3 means to sym_rva. The control-flow-guard
+     *  names libcmt's loadcfg.obj fills the load-config record from are the linker's too, and
+     *  absolute: with no /guard:cf every table and count is zero and __guard_flags is 0x100
+     *  (CF_INSTRUMENTED, which link.exe sets regardless) - the corpus's oracle records, read
+     *  back field by field. An ADDR64 to an absolute is the value alone, with no base and no
+     *  base relocation. */
     {
         Module m; m.name = "*imagebase*"; m.compid = 0xFFFFFFFFu; m.from_archive = false; m.lib = -1;
         Symbol s; s.name = "__ImageBase"; s.value = 0; s.section = -3; s.storage = SYM_EXTERNAL;
-        s.naux = 0; s.aux_tag = -1; s.weak_kind = 0;
+        s.type = 0; s.naux = 0; s.aux_tag = -1; s.weak_kind = 0;
         m.syms.push_back(s);
+        static const char *const guard[] = {
+            "__guard_fids_table", "__guard_fids_count", "__guard_flags", "__guard_iat_table",
+            "__guard_iat_count", "__guard_longjmp_table", "__guard_longjmp_count", "__enclave_config",
+            "__guard_eh_cont_table", "__guard_eh_cont_count", 0
+        };
+        for (int i = 0; guard[i]; i++) {
+            s.name = guard[i]; s.section = -1; s.value = strcmp(guard[i], "__guard_flags") == 0 ? 0x100u : 0u;
+            m.syms.push_back(s);
+        }
         if (!take_module(w, m, err)) return false;
     }
 
@@ -494,7 +588,7 @@ bool Link::read_inputs()
             u32 al = sz >= 16 ? 16 : sz >= 8 ? 8 : sz >= 4 ? 4 : sz >= 2 ? 2 : 1;
             c.size = align_up(c.size, al);
             Symbol s; s.name = it->first; s.value = c.size; s.section = 1; s.storage = SYM_EXTERNAL;
-            s.naux = 0; s.aux_tag = -1; s.weak_kind = 0;
+            s.type = 0; s.naux = 0; s.aux_tag = -1; s.weak_kind = 0;
             m.syms.push_back(s);
             c.size += sz;
         }
@@ -508,15 +602,42 @@ bool Link::read_inputs()
             const std::string &nm = w.undef[u];
             if (w.defined.find(nm) != w.defined.end() || !is_override_hook(nm)) continue;
             Symbol s; s.name = nm; s.value = 0; s.section = -1; s.storage = SYM_EXTERNAL;
-            s.naux = 0; s.aux_tag = -1; s.weak_kind = 0;
+            s.type = 0; s.naux = 0; s.aux_tag = -1; s.weak_kind = 0;
             m.syms.push_back(s);
         }
         if (!m.syms.empty() && !take_module(w, m, err)) return false;
     }
 
+    /*  Liveness, now that everything is in: the roots are every section that is not a
+     *  COMDAT - every section, when nothing is to be left out - and the definitions of the
+     *  linker's own names; everything those reach follows; a COMDAT nothing reached is left
+     *  out with what is ASSOCIATIVE to it. */
+    for (size_t mi = 0; mi < mods.size(); mi++)
+        for (size_t si = 0; si < mods[mi].secs.size(); si++) {
+            Contrib &c = mods[mi].secs[si];
+            if (!c.dropped && (!(c.flags & SCN_LNK_COMDAT) || !opt.optref)) mark_live(w, (int)mi, (int)si);
+        }
+    for (size_t i = 0; i < roots.size(); i++) {
+        std::map<std::string, std::pair<int, int> >::iterator d = w.defined.find(roots[i]);
+        if (d != w.defined.end()) mark_defined_live(w, d->second);
+    }
+    drain(w);
+    if (opt.optref)
+        for (size_t mi = 0; mi < mods.size(); mi++)
+            for (size_t si = 0; si < mods[mi].secs.size(); si++) {
+                Contrib &c = mods[mi].secs[si];
+                if (!c.dropped && !c.live && (c.flags & SCN_LNK_COMDAT)) drop_with_associates(mods[mi], (int)si);
+            }
+
+    if (opt.verbose)
+        for (size_t mi = 0; mi < mods.size(); mi++)
+            for (size_t si = 0; si < mods[mi].secs.size(); si++)
+                if (mods[mi].secs[si].dropped && !mods[mi].secs[si].live && (mods[mi].secs[si].flags & SCN_LNK_COMDAT))
+                    fprintf(stderr, "dead %s #%d %s\n", mods[mi].name.c_str(), (int)si + 1, mods[mi].secs[si].name.c_str());
+
     std::vector<std::string> missing;
     for (size_t u = 0; u < w.undef.size(); u++)
-        if (w.defined.find(w.undef[u]) == w.defined.end()) missing.push_back(w.undef[u]);
+        if (w.defined.find(w.undef[u]) == w.defined.end() && !w.optional[w.undef[u]]) missing.push_back(w.undef[u]);
     if (!missing.empty()) {
         /* every one, as link.exe reports them, so a program is understood in one run */
         err = "unresolved external symbol";
@@ -697,7 +818,12 @@ bool Link::lay_out()
             for (size_t i = 0; i < all.size(); i++) {
                 if (all[i]->size == 0 || all[i]->name == last) continue;
                 last = all[i]->name;
-                if (opt.verbose) fprintf(stderr, "coffgrp name: %s (%u)\n", last.c_str(), all[i]->size);
+                if (opt.verbose) {
+                    /* the run's total, the way the map file lists it, for holding against link.exe's */
+                    u32 run = 0;
+                    for (size_t k = i; k < all.size() && all[k]->name == last; k++) run += all[k]->size;
+                    fprintf(stderr, "run %-28s %x\n", last.c_str(), run);
+                }
                 n += 8 + ((last.size() + 1 + 3) & ~(size_t)3);
             }
             /*  Sixteen zero bytes follow the record - but only in an image with no .data
@@ -869,6 +995,7 @@ bool Link::fix_up()
             const Symbol &s = m.syms[rl.sym];
 
             u64 S = 0;
+            bool absolute = false;                 /* the value is not an address: no base, no base relocation */
             if (s.section == 0 && s.storage == SYM_SECTION) {
                 /*  A section-class reference - the import descriptor's, to its library's
                  *  .idata$4, $5 and $6: the first contribution of that name that came from
@@ -888,8 +1015,10 @@ bool Link::fix_up()
                 std::map<std::string, std::pair<int, int> >::const_iterator it = resolved.find(s.name);
                 if (it == resolved.end()) { err = "unresolved external symbol: " + s.name; return false; }
                 if (!sym_rva(it->second.first, it->second.second, S)) return false;
+                absolute = mods[it->second.first].syms[it->second.second].section == -1;
             } else {
                 if (!sym_rva(c->module, rl.sym, S)) return false;
+                absolute = s.section == -1;
             }
 
             u8 *p = &c->data[rl.offset];
@@ -897,10 +1026,12 @@ bool Link::fix_up()
             switch (rl.type) {
             case REL_ABSOLUTE: break;
             case REL_ADDR64:
+                if (absolute) { wr64(p, S + rd64(p)); break; }
                 wr64(p, opt.image_base + S + rd64(p));
                 base_relocs.push_back(std::make_pair(P, (u16)0xA));    /* DIR64 */
                 break;
             case REL_ADDR32:
+                if (absolute) { wr32(p, (u32)(S + rd32(p))); break; }
                 wr32(p, (u32)(opt.image_base + S + rd32(p)));
                 base_relocs.push_back(std::make_pair(P, (u16)0x3));    /* HIGHLOW */
                 break;

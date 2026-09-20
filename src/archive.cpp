@@ -75,7 +75,7 @@ static void short_import(const u8 *d, u32 dsize, const std::string &archname, Mo
     const char *dll = sym + strlen(sym) + 1;
     if ((u32)(dll - (const char *)d) >= dsize) dll = "";
 
-    m.name = archname + "(" + sym + ")";
+    m.name = archname + "(" + dll + ")";     /* the DLL, as link.exe's map names an import: kernel32:KERNEL32.dll */
     m.compid = 0x00010000u;          /* a short member carries no @comp.id: unmarked */
     m.from_archive = true;
     m.lib = -1;                      /* the caller says which library */
@@ -109,23 +109,34 @@ static void short_import(const u8 *d, u32 dsize, const std::string &archname, Mo
     hn.dropped = false; hn.module = -1; hn.serial = 0; hn.out = -1; hn.rva = 0; hn.fileoff = 0;
     hn.select = COMDAT_NONE; hn.assoc = 0; hn.checksum = 0; hn.comdat_sym = -1;
 
+    /*  An import is in the image only while something reaches it: link.exe's hello has 76
+     *  IAT words where the members pulled would give 92, the sixteen being names referred to
+     *  from COMDATs that were left out. So the member's pieces are marked as a COMDAT group
+     *  is - the IAT word (and the thunk) stand or fall by reference, and the ILT word and
+     *  the hint/name blob go with the IAT word. Nothing here is settled against another
+     *  definition: the flag alone is what the liveness sweep reads. */
+    for (size_t i = 0; i < m.secs.size(); i++) m.secs[i].flags |= SCN_LNK_COMDAT;
+    m.secs[1].select = COMDAT_ANY;
+    m.secs[0].select = COMDAT_ASSOCIATIVE; m.secs[0].assoc = 2;
+    m.secs[2].select = COMDAT_ASSOCIATIVE; m.secs[2].assoc = 2;
+
     /*  The thunk. Six bytes of `jmp qword ptr [rip+d]` reaching the IAT word, which is what
      *  the bed found link.exe appending to .text for every imported routine a call names. */
     if (code) {
         Contrib &t = m.secs[3];
         t.name  = ".text$mn";
-        t.flags = SCN_CNT_CODE | SCN_MEM_EXECUTE | SCN_MEM_READ | 0x00100000u;  /* 1-byte align */
+        t.flags = SCN_CNT_CODE | SCN_MEM_EXECUTE | SCN_MEM_READ | 0x00100000u | SCN_LNK_COMDAT;  /* 1-byte align */
         t.data.assign(6, 0);
         t.data[0] = 0xFF; t.data[1] = 0x25;
         t.size = 6;
         t.dropped = false; t.module = -1; t.serial = 0; t.out = -1; t.rva = 0; t.fileoff = 0;
-        t.select = COMDAT_NONE; t.assoc = 0; t.checksum = 0; t.comdat_sym = -1;
+        t.select = COMDAT_ANY; t.assoc = 0; t.checksum = 0; t.comdat_sym = -1;   /* by reference, as above */
         Reloc r; r.offset = 2; r.sym = 0; r.type = REL_REL32;      /* syms[0] is __imp_<sym> */
         t.relocs.push_back(r);
     }
 
     Symbol s;
-    s.value = 0; s.storage = SYM_EXTERNAL; s.naux = 0; s.aux_tag = -1; s.weak_kind = 0;
+    s.value = 0; s.type = 0; s.storage = SYM_EXTERNAL; s.naux = 0; s.aux_tag = -1; s.weak_kind = 0;
     s.name = std::string("__imp_") + sym; s.section = 2;   /* the $5 word */
     m.syms.push_back(s);
     s.name = std::string("__IMPORT_DESCRIPTOR_") + std::string(dll, strcspn(dll, "."));

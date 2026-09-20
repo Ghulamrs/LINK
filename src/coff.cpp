@@ -148,6 +148,7 @@ bool coff_read(const u8 *p, size_t n, const std::string &name, Module &m, std::s
         s.name    = sym_name(sp, strtab, strsize);
         s.value   = rd32(sp + 8);
         s.section = (short)rd16(sp + 12);
+        s.type    = rd16(sp + 14);
         s.storage = sp[16];
         s.naux    = sp[17];
         s.aux_tag = -1;
@@ -171,7 +172,7 @@ bool coff_read(const u8 *p, size_t n, const std::string &name, Module &m, std::s
         if (s.name == "@comp.id" && s.section == -1) m.compid = s.value;
         for (u8 a = 1; a <= s.naux && i + a < nsym; a++) {
             Symbol &x = m.syms[i + a];
-            x.name = std::string(); x.value = 0; x.section = 0;
+            x.name = std::string(); x.value = 0; x.section = 0; x.type = 0;
             x.storage = 0; x.naux = 0; x.aux_tag = -1;
         }
         i += 1u + s.naux;

@@ -7,6 +7,7 @@
  *  they describe settled.
  */
 #include "link.h"
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 
@@ -214,5 +215,126 @@ bool Link::write_image()
     if (!out) { err = opt.out + ": cannot create"; return false; }
     if (fwrite(&f[0], 1, f.size(), out) != f.size()) { fclose(out); err = opt.out + ": short write"; return false; }
     fclose(out);
+    return true;
+}
+
+/* ------------------------------------------------------------------ map */
+
+/*  link.exe's map file, in its spelling: the runs of contributions by section and length,
+ *  then every public by address with the object it came from, the entry point, and the
+ *  statics. It exists so that a link can be held against the oracle's map run by run and
+ *  name by name - tests/mapdiff.py reads both - which is how the corpus is understood when
+ *  the images differ by more than a header. Addresses are section:offset, as link.exe
+ *  writes them; the "Rva+Base" column is the address in the image. */
+namespace {
+
+struct MapSym {
+    int out; u32 off; std::string name; std::string where; bool code;
+    bool operator<(const MapSym &o) const {
+        if (out != o.out) return out < o.out;
+        if (off != o.off) return off < o.off;
+        return name < o.name;
+    }
+};
+
+/* "libucrt:wsetlocale.obj" for an archive member, the leaf name for an object */
+std::string map_where(const Module &m)
+{
+    if (m.name == "*imagebase*" || m.name == "*linker*") return "<linker-defined>";
+    if (m.name == "*common*") return "<common>";
+    if (m.name == "*override*") return "<absolute>";
+    size_t paren = m.name.find('(');
+    if (m.from_archive && paren != std::string::npos && m.name[m.name.size() - 1] == ')') {
+        std::string lib = m.name.substr(0, paren);
+        std::string mem = m.name.substr(paren + 1, m.name.size() - paren - 2);
+        size_t sl = lib.find_last_of("/\\"); if (sl != std::string::npos) lib = lib.substr(sl + 1);
+        size_t dot = lib.rfind('.'); if (dot != std::string::npos) lib = lib.substr(0, dot);
+        sl = mem.find_last_of("/\\"); if (sl != std::string::npos) mem = mem.substr(sl + 1);
+        return lib + ":" + mem;
+    }
+    size_t sl = m.name.find_last_of("/\\");
+    return sl == std::string::npos ? m.name : m.name.substr(sl + 1);
+}
+
+void map_line(FILE *f, const MapSym &s, u64 base)
+{
+    if (s.out < 0)
+        fprintf(f, " 0000:00000000       %-26s 0000000000000000     %s\n", s.name.c_str(), s.where.c_str());
+    else
+        fprintf(f, " %04x:%08x       %-26s %016llx %s   %s\n", s.out + 1, s.off, s.name.c_str(),
+                (unsigned long long)(base + s.off), s.code ? "f" : " ", s.where.c_str());
+}
+
+} /* namespace */
+
+bool Link::write_map()
+{
+    if (opt.map.empty()) return true;
+    FILE *f = fopen(opt.map.c_str(), "w");
+    if (!f) { err = opt.map + ": cannot write"; return false; }
+
+    std::string title = opt.out;
+    size_t sl = title.find_last_of("/\\"); if (sl != std::string::npos) title = title.substr(sl + 1);
+    size_t dot = title.rfind('.'); if (dot != std::string::npos) title = title.substr(0, dot);
+    fprintf(f, " %s\n\n Timestamp is %08x\n\n Preferred load address is %016llx\n\n", title.c_str(),
+            opt.timestamp, (unsigned long long)opt.image_base);
+
+    fprintf(f, " Start         Length     Name                   Class\n");
+    for (size_t o = 0; o < outs.size(); o++) {
+        const OutSection &os = outs[o];
+        bool code = (os.flags & SCN_CNT_CODE) != 0;
+        for (size_t i = 0; i < os.parts.size(); ) {
+            const Contrib *c = all[os.parts[i]];
+            size_t j = i;
+            while (j < os.parts.size() && all[os.parts[j]]->name == c->name) j++;
+            /* a run reaches the next run's start; the last one keeps its own length */
+            u32 start = c->rva - os.rva;
+            u32 end = j < os.parts.size() ? all[os.parts[j]]->rva - os.rva
+                                          : all[os.parts[j - 1]]->rva - os.rva + all[os.parts[j - 1]]->size;
+            fprintf(f, " %04x:%08x %08xH %-23s %s\n", (int)o + 1, start, end - start, c->name.c_str(),
+                    code ? "CODE" : "DATA");
+            i = j;
+        }
+    }
+
+    std::vector<MapSym> pub, stat;
+    for (std::map<std::string, std::pair<int, int> >::const_iterator it = resolved.begin(); it != resolved.end(); ++it) {
+        const Module &m = mods[it->second.first];
+        const Symbol &s = m.syms[it->second.second];
+        MapSym ms; ms.name = it->first; ms.where = map_where(m); ms.out = -1; ms.off = 0; ms.code = false;
+        if (s.section == -1) { ms.where = "<absolute>"; }
+        else if (s.section == -3) { ms.where = "<linker-defined>"; }
+        else if (s.section > 0) {
+            const Contrib &c = m.secs[s.section - 1];
+            if (c.dropped || c.out < 0) continue;
+            ms.out = c.out; ms.off = c.rva + s.value - outs[c.out].rva; ms.code = (s.type & 0xF0) == 0x20;
+        } else continue;
+        pub.push_back(ms);
+    }
+    for (size_t mi = 0; mi < mods.size(); mi++) {
+        const Module &m = mods[mi];
+        for (size_t k = 0; k < m.syms.size(); k++) {
+            const Symbol &s = m.syms[k];
+            if ((s.storage != SYM_STATIC && s.storage != 6) || s.section <= 0 || s.name.empty() || s.name[0] == '.') continue;
+            if ((size_t)s.section > m.secs.size()) continue;
+            const Contrib &c = m.secs[s.section - 1];
+            if (c.dropped || c.out < 0) continue;
+            if (s.name == c.name) continue;
+            MapSym ms; ms.name = s.name; ms.where = map_where(m);
+            ms.out = c.out; ms.off = c.rva + s.value - outs[c.out].rva; ms.code = (s.type & 0xF0) == 0x20;
+            stat.push_back(ms);
+        }
+    }
+    std::sort(pub.begin(), pub.end());
+    std::sort(stat.begin(), stat.end());
+
+    fprintf(f, "\n  Address         Publics by Value              Rva+Base               Lib:Object\n\n");
+    for (size_t i = 0; i < pub.size(); i++) map_line(f, pub[i], opt.image_base + (pub[i].out >= 0 ? outs[pub[i].out].rva : 0));
+    int eo = -1; u32 eoff = 0;
+    for (size_t o = 0; o < outs.size(); o++)
+        if (entry_rva >= outs[o].rva && entry_rva < outs[o].rva + outs[o].virt_size) { eo = (int)o; eoff = entry_rva - outs[o].rva; }
+    fprintf(f, "\n entry point at        %04x:%08x\n\n Static symbols\n\n", eo + 1, eoff);
+    for (size_t i = 0; i < stat.size(); i++) map_line(f, stat[i], opt.image_base + outs[stat[i].out].rva);
+    fclose(f);
     return true;
 }

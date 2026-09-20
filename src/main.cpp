@@ -64,7 +64,8 @@ bool Link::run()
     if (!lay_out())     return false;
     if (!address())     return false;
     if (!fix_up())      return false;
-    return write_image();
+    if (!write_image()) return false;
+    return write_map();
 }
 
 int main(int argc, char **argv)
@@ -93,14 +94,32 @@ int main(int argc, char **argv)
         if (eat(a, "defaultlib:", v)) { lk.opt.defaultlibs.push_back(v); continue; }
         if (eat(a, "nodefaultlib:", v)) { lk.opt.nodefaultlibs.push_back(v); continue; }
         if (eat(a, "debug", v))       { lk.opt.debug = true; continue; }
+        if (eat(a, "include:", v))    { lk.opt.includes.push_back(v); continue; }
+        if (eat(a, "opt:", v))        {
+            /* /opt:ref,icf and the rest: ref and noref decide something, the others are accepted */
+            std::string s;
+            for (size_t k = 0; k < v.size(); k++) s += (char)((v[k] >= 'A' && v[k] <= 'Z') ? v[k] - 'A' + 'a' : v[k]);
+            size_t at = 0;
+            while (at <= s.size()) {
+                size_t comma = s.find(',', at);
+                if (comma == std::string::npos) comma = s.size();
+                std::string one = s.substr(at, comma - at);
+                if (one == "ref")   { lk.opt.optref = true;  lk.opt.optref_said = true; }
+                if (one == "noref") { lk.opt.optref = false; lk.opt.optref_said = true; }
+                at = comma + 1;
+            }
+            continue;
+        }
         if (eat(a, "align:", v))      { lk.opt.section_align = (u32)strtoul(v.c_str(), 0, 0); continue; }
         if (eat(a, "filealign:", v))  { lk.opt.file_align = (u32)strtoul(v.c_str(), 0, 0); continue; }
         if (eat(a, "nodefaultlib", v)) { lk.opt.nodefaultlib = true; continue; }
         if (eat(a, "fixed", v))        { lk.opt.fixed = true; continue; }
         if (eat(a, "dynamicbase", v))  { lk.opt.dynamicbase = true; continue; }
         if (eat(a, "verbose", v))      { lk.opt.verbose = true; continue; }
-        if (eat(a, "nologo", v) || eat(a, "map", v) || eat(a, "incremental", v) ||
-            eat(a, "machine:", v) || eat(a, "opt:", v) || eat(a, "ignore:", v) ||
+        if (eat(a, "map:", v))        { lk.opt.map = v; continue; }
+        if (eat(a, "map", v) && v.empty()) { lk.opt.map = "*"; continue; }
+        if (eat(a, "nologo", v) || eat(a, "incremental", v) ||
+            eat(a, "machine:", v) || eat(a, "ignore:", v) ||
             eat(a, "release", v) || eat(a, "manifest", v) || eat(a, "nxcompat", v) ||
             eat(a, "largeaddressaware", v) || eat(a, "errorreport:", v) || eat(a, "pdb:", v) ||
             eat(a, "tlbid:", v) || eat(a, "brepro", v)) continue;
@@ -121,10 +140,17 @@ int main(int argc, char **argv)
     }
     if (!lk.opt.have_timestamp) lk.opt.timestamp = (u32)time(0);
     lib_env(lk.opt);                       /* after /libpath:, which is searched first */
-    if (lk.opt.debug)
+    if (lk.opt.debug) {
         fprintf(stderr, "link: /debug is accepted and does nothing yet - no .pdb is written, and the "
                         ".debug$S sections are left behind\n");
+        if (!lk.opt.optref_said) lk.opt.optref = false;     /* link.exe: /debug implies /opt:noref */
+    }
 
+    if (lk.opt.map == "*") {               /* /map with no name: beside the image */
+        std::string s = lk.opt.out;
+        size_t d = s.rfind('.');
+        lk.opt.map = (d == std::string::npos ? s : s.substr(0, d)) + ".map";
+    }
     if (!lk.run()) {
         fprintf(stderr, "link: %s\n", lk.err.c_str());
         return 1;

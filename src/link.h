@@ -66,6 +66,7 @@ struct Symbol {
     u32  value;
     int  section;   /* 1-based COFF section number; 0 undefined, -1 absolute, -2 debug,
                        -3 the image base (the linker's own __ImageBase) */
+    u16  type;      /* COFF type: 0x20 marks a function, which the map file shows as `f` */
     u8   storage;
     u8   naux;
     int  aux_tag;   /* weak external: the symbol index to fall back on, else -1 */
@@ -84,6 +85,7 @@ struct Contrib {
     int  module;              /* index into Link::mods */
     int  serial;              /* the order this contribution was read in: the tie-break */
     bool dropped;             /* .debug$*, .drectve, LNK_REMOVE, a COMDAT that lost - read, then left behind */
+    bool live;                /* reached from the entry, a non-COMDAT section or an /include: what /OPT:REF keeps */
     u8   select;              /* COMDAT_*: how a second definition of its symbol is settled */
     int  assoc;               /* COMDAT_ASSOCIATIVE: the 1-based section this one follows */
     u32  checksum;            /* the aux record's, for EXACT_MATCH */
@@ -94,7 +96,7 @@ struct Contrib {
     /*  Every field settled here rather than at each of the four places a contribution is
      *  made: the linker's own records were left with an unset `select` and their module with
      *  an unset `lib`, and the placement order read that. */
-    Contrib() : flags(0), size(0), module(-1), serial(0), dropped(false), select(COMDAT_NONE),
+    Contrib() : flags(0), size(0), module(-1), serial(0), dropped(false), live(false), select(COMDAT_NONE),
                 assoc(0), checksum(0), comdat_sym(-1), out(-1), rva(0), fileoff(0) {}
 };
 
@@ -129,11 +131,16 @@ struct Resolved {
 
 struct Options {
     std::string out;
+    std::string map;                     /* /map[:file]: link.exe's map, for holding a link against the oracle's */
     std::string entry;
     std::vector<std::string> inputs;     /* objects and archives, in command-line order */
     std::vector<std::string> libpath;    /* /libpath: then LIB, the directories a bare .lib is looked for in */
     std::vector<std::string> defaultlibs;    /* /defaultlib: from the command line */
     std::vector<std::string> nodefaultlibs;  /* /nodefaultlib:name - those names, ignored wherever met */
+    std::vector<std::string> includes;       /* /include:name - a reference the command line makes */
+    bool optref;                         /* /opt:ref - unreferenced COMDATs left out, and their references never searched for;
+                                            /opt:noref, or /debug without /opt:ref, keeps everything */
+    bool optref_said;                    /* /opt:ref or /opt:noref was spelled, so /debug does not decide it */
     bool nodefaultlib;
     bool fixed;                          /* /fixed: no .reloc, no dynamic base */
     bool dynamicbase;
@@ -174,6 +181,7 @@ struct Link {
     bool address();
     bool fix_up();
     bool write_image();
+    bool write_map();
     bool sym_rva(int mod, int sym, u64 &rva);
     void sort_pdata();
     int  out_index(const std::string &name) const;
