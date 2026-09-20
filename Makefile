@@ -29,9 +29,11 @@ $(OBJDIR)/%.o: src/%.cpp
 
 -include $(OBJS:.o=.d)
 
+# Both beds run, whatever the first one says, and the target fails if either did.
 test: $(TARGET)
-	LINK=$(TARGET) sh tests/run.sh
-	LINK=$(TARGET) sh tests/bad.sh
+	@LINK=$(TARGET) sh tests/run.sh; r=$$?; echo; \
+	 LINK=$(TARGET) sh tests/bad.sh; b=$$?; \
+	 [ $$r -eq 0 ] && [ $$b -eq 0 ]
 
 clean:
 	rm -rf $(OBJDIR) $(TARGET)
