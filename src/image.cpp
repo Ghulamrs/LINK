@@ -65,8 +65,14 @@ static void fill_own_records(Link &lk)
         if (c->size == 0 || c->name == last) continue;   /* an empty contribution names no run */
         last = c->name;
         u32 rva = c->rva, size = 0;
-        for (size_t j = i; j < lk.all.size() && (lk.all[j]->name == last || lk.all[j]->size == 0); j++)
+        size_t j = i;
+        for (; j < lk.all.size() && (lk.all[j]->name == last || lk.all[j]->size == 0); j++)
             if (lk.all[j]->size) size = (lk.all[j]->rva + lk.all[j]->size) - rva;
+        /*  A run reaches the next run in its output section: the alignment padding between
+         *  them is counted with the run before it, not left out. p04's .data is eight bytes
+         *  and 0x10 in the map, .bss after it being sixteen-aligned. The last run in a
+         *  section keeps its own length. */
+        if (j < lk.all.size() && lk.all[j]->out == c->out) size = lk.all[j]->rva - rva;
         wr32(&grp->data[at], rva);
         wr32(&grp->data[at + 4], size);
         size_t n = last.size() + 1;
