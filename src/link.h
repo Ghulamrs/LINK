@@ -205,7 +205,7 @@ struct Link {
      *  field is not filled in until lay_out places the contribution, and this
      *  runs before placement. */
     std::string fold_key(int mod, const Contrib &c) const;
-    std::string target_key(int mod, const Contrib &c, const Reloc &r) const;
+    std::string target_key(int mod, const Reloc &r) const;
     bool sym_rva(int mod, int sym, u64 &rva);
     void sort_pdata();
     int  out_index(const std::string &name) const;

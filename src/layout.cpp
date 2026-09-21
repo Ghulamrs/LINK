@@ -1140,7 +1140,7 @@ void Link::fold_rep(int &mod, int &sec) const
  *  sections compare equal exactly when they will reach the same address. A
  *  target inside a contribution is named by that contribution's *survivor*,
  *  so a pair that has already folded makes its referrers identical in turn. */
-std::string Link::target_key(int mod, const Contrib &c, const Reloc &r) const
+std::string Link::target_key(int mod, const Reloc &r) const
 {
     const Module &m = mods[mod];
     if (r.sym >= m.syms.size()) return "!";
@@ -1191,7 +1191,7 @@ std::string Link::fold_key(int mod, const Contrib &c) const
     for (size_t i = 0; i < c.relocs.size(); i++) {
         snprintf(b, sizeof b, "|%u,%u,", c.relocs[i].offset, (unsigned)c.relocs[i].type);
         k += b;
-        k += target_key(mod, c, c.relocs[i]);
+        k += target_key(mod, c.relocs[i]);
     }
     return k;
 }

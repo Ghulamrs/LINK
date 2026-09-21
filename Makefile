@@ -12,7 +12,10 @@ ifeq ($(origin CXX),default)
 endif
 CXXFLAGS = -std=c++14 -O2 -g -Wall -Wextra -Werror -pedantic -pthread
 SRCS     = $(filter src/%.cpp,$(wildcard src/*.cpp))
-OBJDIR  ?= ../build/LINK/obj
+# Named after the checkout, so a worktree beside this one (LINK-icf) does not share the
+# main tree's objects: with one directory, `make` in either tree links the other's .o files
+# when their sources are older, and a stale binary passes for the current source.
+OBJDIR  ?= ../build/$(notdir $(CURDIR))/obj
 OBJS     = $(patsubst src/%.cpp,$(OBJDIR)/%.o,$(SRCS))
 BINDIR  ?= build
 TARGET   = $(BINDIR)/link.exe
