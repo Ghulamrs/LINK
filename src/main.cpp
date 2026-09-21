@@ -61,6 +61,7 @@ static void lib_env(Options &o)
 bool Link::run()
 {
     if (!read_inputs()) return false;
+    if (!fold_identical()) return false;
     if (!lay_out())     return false;
     if (!address())     return false;
     if (!fix_up())      return false;
@@ -106,6 +107,8 @@ int main(int argc, char **argv)
                 std::string one = s.substr(at, comma - at);
                 if (one == "ref")   { lk.opt.optref = true;  lk.opt.optref_said = true; }
                 if (one == "noref") { lk.opt.optref = false; lk.opt.optref_said = true; }
+                if (one == "icf")   { lk.opt.opticf = true;  lk.opt.opticf_said = true; }
+                if (one == "noicf") { lk.opt.opticf = false; lk.opt.opticf_said = true; }
                 at = comma + 1;
             }
             continue;
@@ -144,6 +147,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "link: /debug is accepted and does nothing yet - no .pdb is written, and the "
                         ".debug$S sections are left behind\n");
         if (!lk.opt.optref_said) lk.opt.optref = false;     /* link.exe: /debug implies /opt:noref */
+        if (!lk.opt.opticf_said) lk.opt.opticf = false;     /* and /opt:noicf, so a debugger sees each function once */
     }
 
     if (lk.opt.map == "*") {               /* /map with no name: beside the image */
