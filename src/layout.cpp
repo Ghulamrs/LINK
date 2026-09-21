@@ -23,7 +23,7 @@
 #include <thread>
 
 Options::Options()
-    : entry(), optref(true), optref_said(false), nodefaultlib(false), fixed(false), dynamicbase(true),
+    : entry(), optref(true), optref_said(false), opticf(true), opticf_said(false), nodefaultlib(false), fixed(false), dynamicbase(true),
       timestamp(0), have_timestamp(false), subsystem(3),
       image_base(0x140000000ull), section_align(0x1000), file_align(0x200),
       stack_reserve(0x100000), stack_commit(0x1000), heap_reserve(0x100000), heap_commit(0x1000),
@@ -956,7 +956,11 @@ bool Link::sym_rva(int mod, int sym, u64 &rva)
     if (s.section == -1) { rva = s.value; return true; }       /* absolute */
     if (s.section == -3) { rva = 0; return true; }             /* the image base itself */
     if (s.section <= 0) { err = "undefined symbol: " + s.name; return false; }
-    const Contrib &c = mods[mod].secs[s.section - 1];
+    /*  A folded section holds no bytes of its own; its symbols answer at the
+     *  survivor's address, which is the whole point of the fold. */
+    int fm = mod, fs = s.section - 1;
+    fold_rep(fm, fs);
+    const Contrib &c = mods[fm].secs[fs];
     if (c.out < 0 && c.size == 0 && !c.dropped) { rva = 0; return true; }   /* a label in a section of nothing */
     if (c.out < 0) { err = "symbol in a section that was left out: " + s.name; return false; }
     rva = c.rva + s.value;
@@ -1111,5 +1115,155 @@ bool Link::fix_up()
         reloc_data.resize(s.raw_size, 0);
         size_of_image = align_up(s.rva + s.virt_size, opt.section_align);
     }
+    return true;
+}
+
+
+/* ------------------------------------------------------------------- ICF */
+
+/*  The surviving contribution a fold chain ends at. The chain is built one
+ *  link long - a section folds straight into a survivor that is itself not
+ *  folded - but it is walked defensively, since a later round may fold a
+ *  survivor into an earlier one. */
+void Link::fold_rep(int &mod, int &sec) const
+{
+    for (int guard = 0; guard < 64; guard++) {
+        if (mod < 0 || sec < 0) return;
+        const Contrib &c = mods[mod].secs[sec];
+        if (c.fold_mod < 0) return;
+        mod = c.fold_mod;
+        sec = c.fold_sec;
+    }
+}
+
+/*  What a relocation points at, written so that two relocations in different
+ *  sections compare equal exactly when they will reach the same address. A
+ *  target inside a contribution is named by that contribution's *survivor*,
+ *  so a pair that has already folded makes its referrers identical in turn. */
+std::string Link::target_key(int mod, const Contrib &c, const Reloc &r) const
+{
+    const Module &m = mods[mod];
+    if (r.sym >= m.syms.size()) return "!";
+    const Symbol &s = m.syms[r.sym];
+
+    /*  A section-class reference - the import descriptor's .idata$4 and the
+     *  like - names a section rather than a symbol; its own name is the key. */
+    if (s.section == 0 && s.storage == SYM_SECTION) return "S" + s.name;
+
+    int tm = mod, ts = -1;
+    long long val = 0;
+    if (s.section > 0 && (size_t)s.section <= m.secs.size() && !m.secs[s.section - 1].dropped) {
+        ts = s.section - 1;
+        val = s.value;
+    } else {
+        std::map<std::string, std::pair<int, int> >::const_iterator it = resolved.find(s.name);
+        if (it == resolved.end()) return "U" + s.name;
+        const Symbol &d = mods[it->second.first].syms[it->second.second];
+        if (d.section == -3) return "B";                       /* the image base */
+        if (d.section == -1) {                                 /* an absolute */
+            char b[32]; snprintf(b, sizeof b, "A%llx", (unsigned long long)d.value);
+            return b;
+        }
+        if (d.section <= 0 || (size_t)d.section > mods[it->second.first].secs.size())
+            return "U" + s.name;
+        tm = it->second.first;
+        ts = d.section - 1;
+        val = d.value;
+    }
+    fold_rep(tm, ts);
+    char b[64];
+    snprintf(b, sizeof b, "C%d:%d:%lld", tm, ts, val);
+    return b;
+}
+
+/*  Everything about a contribution that has to match for a fold to be safe:
+ *  the section it would be placed in and its name, its size, the
+ *  characteristics that decide its placement, its bytes, and every relocation
+ *  by offset, type and target. Two contributions with the same key produce the
+ *  same bytes at the same address, so one of them is not needed. */
+std::string Link::fold_key(int mod, const Contrib &c) const
+{
+    std::string k = c.name;
+    char b[64];
+    snprintf(b, sizeof b, "|%x|%x|%u|", c.size, c.flags, (unsigned)c.relocs.size());
+    k += b;
+    if (!c.data.empty()) k.append((const char *)&c.data[0], c.data.size());
+    for (size_t i = 0; i < c.relocs.size(); i++) {
+        snprintf(b, sizeof b, "|%u,%u,", c.relocs[i].offset, (unsigned)c.relocs[i].type);
+        k += b;
+        k += target_key(mod, c, c.relocs[i]);
+    }
+    return k;
+}
+
+/*  /OPT:ICF. A COMDAT is the compiler's word that a definition may appear more
+ *  than once and the linker may keep one; two whose bytes and targets agree are
+ *  the same function, however they were named, and one copy will do.
+ *
+ *  This is where link.exe and gcc part company: gcc folds in the compiler
+ *  (-fipa-icf), Microsoft in the linker, and this follows Microsoft. It is
+ *  also, strictly, non-conforming - two functions end up sharing an address,
+ *  so `&f == &g` where C++ says they differ - which is exactly why /OPT:NOICF
+ *  exists and why /DEBUG turns it off.
+ *
+ *  ASSOCIATIVE children go with their parent: the .pdata and .xdata describing
+ *  a function that no longer has bytes would only duplicate the survivor's. */
+bool Link::fold_identical()
+{
+    if (!opt.opticf) return true;
+
+    size_t folded = 0;
+    for (int round = 0; round < 8; round++) {
+        std::map<std::string, std::pair<int, int> > first;
+        size_t here = 0;
+
+        for (size_t mi = 0; mi < mods.size(); mi++) {
+            for (size_t si = 0; si < mods[mi].secs.size(); si++) {
+                Contrib &c = mods[mi].secs[si];
+                if (c.dropped || !c.live) continue;
+                if (!(c.flags & SCN_LNK_COMDAT)) continue;
+                if (c.select == COMDAT_ASSOCIATIVE) continue;   /* follows its parent */
+                if (c.data.empty() || c.size == 0) continue;
+
+                /*  **Only what is never written at run time.** Folding is
+                 *  sound for bytes nobody changes - code, and read-only data.
+                 *  A writable section is storage, and two pieces of storage
+                 *  that happen to start out alike are still two. */
+                if (c.flags & SCN_MEM_WRITE) continue;
+
+                /*  The import tables are the case that proves it. The loader
+                 *  writes each .idata$5 word as it binds, and the short import
+                 *  members are COMDAT here so /OPT:REF can drop the unused, so
+                 *  without this they fold together and every import after the
+                 *  first reads one address. p03 and p09 said so. */
+                if (c.name.compare(0, 6, ".idata") == 0) continue;
+
+                std::string k = fold_key((int)mi, c);
+                std::map<std::string, std::pair<int, int> >::iterator it = first.find(k);
+                if (it == first.end()) {
+                    first.insert(std::make_pair(k, std::make_pair((int)mi, (int)si)));
+                    continue;
+                }
+                if (it->second.first == (int)mi && it->second.second == (int)si) continue;
+
+                c.fold_mod = it->second.first;
+                c.fold_sec = it->second.second;
+                c.dropped = true;
+                for (size_t k2 = 0; k2 < mods[mi].secs.size(); k2++) {
+                    Contrib &a = mods[mi].secs[k2];
+                    if (!a.dropped && a.select == COMDAT_ASSOCIATIVE && a.assoc == (int)si + 1)
+                        a.dropped = true;
+                }
+                here++;
+                if (opt.verbose)
+                    fprintf(stderr, "fold %s #%d into %s #%d\n", mods[mi].name.c_str(), (int)si + 1,
+                            mods[it->second.first].name.c_str(), it->second.second + 1);
+            }
+        }
+        folded += here;
+        if (here == 0) break;
+    }
+
+    if (opt.verbose) fprintf(stderr, "icf: %u contribution(s) folded\n", (unsigned)folded);
     return true;
 }

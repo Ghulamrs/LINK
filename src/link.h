@@ -90,6 +90,10 @@ struct Contrib {
     int  assoc;               /* COMDAT_ASSOCIATIVE: the 1-based section this one follows */
     u32  checksum;            /* the aux record's, for EXACT_MATCH */
     int  comdat_sym;          /* the COMDAT symbol's index, -1 when the section has none */
+    /*  /OPT:ICF: the contribution this one folded into, -1 when it stands on its
+     *  own. A folded section is dropped - nothing of it is placed - but every
+     *  symbol in it still answers, at the survivor's address. */
+    int  fold_mod, fold_sec;
     int  out;                 /* output section index, -1 until placed */
     u32  rva;
     u32  fileoff;             /* 0 for a contribution with no bytes in the file */
@@ -97,7 +101,8 @@ struct Contrib {
      *  made: the linker's own records were left with an unset `select` and their module with
      *  an unset `lib`, and the placement order read that. */
     Contrib() : flags(0), size(0), module(-1), serial(0), dropped(false), live(false), select(COMDAT_NONE),
-                assoc(0), checksum(0), comdat_sym(-1), out(-1), rva(0), fileoff(0) {}
+                assoc(0), checksum(0), comdat_sym(-1), fold_mod(-1), fold_sec(-1), out(-1), rva(0),
+                fileoff(0) {}
 };
 
 /*  One input file, or one member of an archive, or the linker itself. `compid` is the value
@@ -141,6 +146,9 @@ struct Options {
     bool optref;                         /* /opt:ref - unreferenced COMDATs left out, and their references never searched for;
                                             /opt:noref, or /debug without /opt:ref, keeps everything */
     bool optref_said;                    /* /opt:ref or /opt:noref was spelled, so /debug does not decide it */
+    bool opticf;                         /* /opt:icf - COMDATs with identical bytes and targets folded into one,
+                                            which is what link.exe does unless /debug or /opt:noicf says otherwise */
+    bool opticf_said;                    /* /opt:icf or /opt:noicf was spelled */
     bool nodefaultlib;
     bool fixed;                          /* /fixed: no .reloc, no dynamic base */
     bool dynamicbase;
@@ -187,6 +195,17 @@ struct Link {
     bool fix_up();
     bool write_image();
     bool write_map();
+    /*  /OPT:ICF. Run after the references are settled and before anything is
+     *  placed: a COMDAT whose bytes and whose relocation targets match another's
+     *  is folded into it. Folding one pair can make a second pair identical -
+     *  two functions that each called one of the pair - so it iterates. */
+    bool fold_identical();
+    void fold_rep(int &mod, int &sec) const;
+    /*  Both take the module index rather than reading Contrib::module: that
+     *  field is not filled in until lay_out places the contribution, and this
+     *  runs before placement. */
+    std::string fold_key(int mod, const Contrib &c) const;
+    std::string target_key(int mod, const Contrib &c, const Reloc &r) const;
     bool sym_rva(int mod, int sym, u64 &rva);
     void sort_pdata();
     int  out_index(const std::string &name) const;
