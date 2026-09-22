@@ -1206,8 +1206,10 @@ std::string Link::fold_key(int mod, const Contrib &c) const
  *  so `&f == &g` where C++ says they differ - which is exactly why /OPT:NOICF
  *  exists and why /DEBUG turns it off.
  *
- *  ASSOCIATIVE children go with their parent: the .pdata and .xdata describing
- *  a function that no longer has bytes would only duplicate the survivor's. */
+ *  ASSOCIATIVE children go with their parent - the .pdata and .xdata describing
+ *  a function that no longer has bytes would only duplicate the survivor's -
+ *  and each is folded onto the survivor's own child rather than merely
+ *  dropped, so that a symbol defined in one still answers. */
 bool Link::fold_identical()
 {
     if (!opt.opticf) return true;
@@ -1246,13 +1248,51 @@ bool Link::fold_identical()
                 }
                 if (it->second.first == (int)mi && it->second.second == (int)si) continue;
 
-                c.fold_mod = it->second.first;
-                c.fold_sec = it->second.second;
+                const int sm = it->second.first, ss = it->second.second;
+                c.fold_mod = sm;
+                c.fold_sec = ss;
                 c.dropped = true;
+
+                /*  **A child follows its parent to the survivor, not to
+                 *  nothing.** Dropping it is only half the job: a symbol
+                 *  defined in it must still answer, so it needs the survivor's
+                 *  matching child as its fold target the way the parent has
+                 *  the survivor. The .pdata and .xdata that first motivated
+                 *  this hold no symbol anyone references, which is why leaving
+                 *  fold_mod unset survived 6,500 links - until a catch
+                 *  funclet, which is code in a `.text$x` of its own with a
+                 *  `$catch$0` symbol the parent's .xdata points at, folded and
+                 *  left that symbol in a section that was left out.
+                 *
+                 *  Children are paired by name and by their order among the
+                 *  children of that name: two catch blocks in one function
+                 *  give two `.text$x`, and the first must answer to the first.
+                 *  A child with no counterpart is left standing - the survivor
+                 *  cannot speak for what it does not have. */
                 for (size_t k2 = 0; k2 < mods[mi].secs.size(); k2++) {
                     Contrib &a = mods[mi].secs[k2];
-                    if (!a.dropped && a.select == COMDAT_ASSOCIATIVE && a.assoc == (int)si + 1)
-                        a.dropped = true;
+                    if (a.dropped || a.select != COMDAT_ASSOCIATIVE) continue;
+                    if (a.assoc != (int)si + 1) continue;
+
+                    int nth = 0;                       /* which child of this name it is */
+                    for (size_t k3 = 0; k3 < k2; k3++) {
+                        const Contrib &b = mods[mi].secs[k3];
+                        if (b.select == COMDAT_ASSOCIATIVE && b.assoc == (int)si + 1 && b.name == a.name)
+                            nth++;
+                    }
+
+                    int mate = -1, seen = 0;
+                    for (size_t k3 = 0; k3 < mods[sm].secs.size(); k3++) {
+                        const Contrib &b = mods[sm].secs[k3];
+                        if (b.dropped || b.select != COMDAT_ASSOCIATIVE) continue;
+                        if (b.assoc != ss + 1 || b.name != a.name) continue;
+                        if (seen++ == nth) { mate = (int)k3; break; }
+                    }
+                    if (mate < 0) continue;            /* nothing to answer for it: keep it */
+
+                    a.fold_mod = sm;
+                    a.fold_sec = mate;
+                    a.dropped = true;
                 }
                 here++;
                 if (opt.verbose)
