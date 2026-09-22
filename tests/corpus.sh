@@ -20,6 +20,10 @@ set -u
 cd "$(dirname "$0")/.." || exit 1
 BIN=$(cd "${BIN:-../RIDE/bin}" && pwd)
 CC1I=${CC1I:-$BIN/cc1i.exe}; CXX1I=${CXX1I:-$BIN/cxx1i.exe}; SHCI=${SHCI:-$BIN/shci.exe}
+# Optimization flags for each compiler, so a corpus run can judge an optimizer
+# end to end: cc1i's output assembled by this project's masm, linked by this
+# linker, and run. Empty by default, which is -O0 and what the ledger records.
+CC1FLAGS=${CC1FLAGS:-}; CXX1FLAGS=${CXX1FLAGS:-}; SHCFLAGS=${SHCFLAGS:-}
 BOX=${BOX:-windows}
 ROOT=${ROOT:-C:/link-probes/corpus}
 T=${T:-build/corpus}
@@ -35,11 +39,11 @@ compile() {
         for m in $modules; do
             b=${m%.*}
             case $m in
-            *.c)   "$CC1I" -S -arch x86_64-windows -masm=masm -I "$d" "$d/$m" -o "$out/$b.asm" 2> "$out/$b.cc.err" < /dev/null || { echo "REFUSED $p/$m: $(grep -v '©' "$out/$b.cc.err" | head -1)"; refused=$((refused+1)); } ;;
-            *.cpp) cpp=1; "$CXX1I" -arch x86_64-windows -masm=masm -S "$d/$m" -o "$out/$b.asm" 2> "$out/$b.cc.err" < /dev/null || { echo "REFUSED $p/$m: $(grep -v '©' "$out/$b.cc.err" | head -1)"; refused=$((refused+1)); } ;;
+            *.c)   "$CC1I" $CC1FLAGS -S -arch x86_64-windows -masm=masm -I "$d" "$d/$m" -o "$out/$b.asm" 2> "$out/$b.cc.err" < /dev/null || { echo "REFUSED $p/$m: $(grep -v '©' "$out/$b.cc.err" | head -1)"; refused=$((refused+1)); } ;;
+            *.cpp) cpp=1; "$CXX1I" $CXX1FLAGS -arch x86_64-windows -masm=masm -S "$d/$m" -o "$out/$b.asm" 2> "$out/$b.cc.err" < /dev/null || { echo "REFUSED $p/$m: $(grep -v '©' "$out/$b.cc.err" | head -1)"; refused=$((refused+1)); } ;;
             *.shl|*.shm)
                    [ $shm = 1 ] && continue    # shci took the rest from beside the first
-                   shm=1; ( cd "$d" && "$SHCI" --target=x86_64-windows -S "$m" -o "$OLDPWD/$out/$b.asm" ) 2> "$out/$b.cc.err" < /dev/null || { echo "REFUSED $p/$m: $(grep -v '©' "$out/$b.cc.err" | head -1)"; refused=$((refused+1)); } ;;
+                   shm=1; ( cd "$d" && "$SHCI" $SHCFLAGS --target=x86_64-windows -S "$m" -o "$OLDPWD/$out/$b.asm" ) 2> "$out/$b.cc.err" < /dev/null || { echo "REFUSED $p/$m: $(grep -v '©' "$out/$b.cc.err" | head -1)"; refused=$((refused+1)); } ;;
             *.asm) cp "$d/$m" "$out/$b.asm" ;;
             esac
             [ -f "$out/$b.asm" ] && objs="$objs $b"
