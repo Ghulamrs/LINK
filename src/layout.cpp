@@ -564,11 +564,22 @@ bool Link::read_inputs()
     }
 
     /*  Then the archives, in passes; then the libraries the objects asked for, which may
-     *  ask for more; then the fallbacks. Round until nothing opens. */
+     *  ask for more; and only when no library is left to open, the fallbacks - which may
+     *  take members that ask for more libraries, so round until nothing opens.
+     *
+     *  **The fallbacks last, and it is not a matter of taste.** libcmt's startup calls
+     *  __acrt_initialize and __vcrt_initialize as weak externals whose fallbacks are the
+     *  empty stubs in libcmt(ucrt_stubs.obj); the real ones are in libucrt and libvcruntime,
+     *  which LIBCMT's own /DEFAULTLIB opens. Settled before those were open, the stubs won,
+     *  the CRT was never initialised, and the program died in ntdll before main - every shci
+     *  program, whose link names only its object and shmrt-x86_64-windows.lib and gets the
+     *  CRT by directive. cc1i and cxx1i name the CRT libraries and never saw it. */
     for (;;) {
         if (!pull_until_settled(w, err)) return false;
-        if (!settle_fallbacks(w, err)) return false;
         bool opened = false;
+        if (!open_default_libraries(w, err, opened)) return false;
+        if (opened) continue;
+        if (!settle_fallbacks(w, err)) return false;
         if (!open_default_libraries(w, err, opened)) return false;
         if (!opened) break;
     }
