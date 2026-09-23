@@ -50,16 +50,18 @@ def main():
     totals = collections.defaultdict(collections.Counter)
     for p in progs:
         d = os.path.join(root, p)
-        name, flags, objs, shm = open(os.path.join(d, 'link.txt')).read().strip().split('|')
+        parts = open(os.path.join(d, 'link.txt')).read().strip().split('|')
+        name, flags, objs, shm = parts[:4]
+        comdat = len(parts) > 4 and parts[4] == '1'   # ml64 has no COMDAT: not asked
         objs = objs.split()
         kinds = set()
         for o in objs:
             for ext in ('.c', '.cpp', '.shl', '.shm', '.asm'):
                 pass
         # which assembler refused what
-        ml_ok = all(os.path.exists(os.path.join(d, 'ml', o + '.obj')) for o in objs)
+        ml_ok = not comdat and all(os.path.exists(os.path.join(d, 'ml', o + '.obj')) for o in objs)
         my_ok = all(os.path.exists(os.path.join(d, 'my', o + '.obj')) for o in objs)
-        if not ml_ok:
+        if not ml_ok and not comdat:
             for o in objs:
                 if not os.path.exists(os.path.join(d, 'ml', o + '.obj')):
                     asmref['ml64: ' + first_error(read(os.path.join(d, 'ml', o + '.log')))].append(p)
@@ -74,6 +76,9 @@ def main():
         for leg in LEGS:
             exe = os.path.join(d, leg + '.exe')
             asm_ok = ml_ok if leg.startswith('ml') else my_ok
+            if comdat and leg.startswith('ml'):
+                cells[leg] = 'n/a (ml64 has no COMDAT)'; totals[leg]['n/a, COMDAT'] += 1
+                continue
             if not asm_ok:
                 cells[leg] = 'n/a (assembler)'; totals[leg]['n/a'] += 1
                 continue

@@ -49,8 +49,13 @@ compile() {
             [ -f "$out/$b.asm" ] && objs="$objs $b"
         done
         flags="-"; [ $cpp = 1 ] && flags="/stack:8388608"     # "-" for none: cmd's for /f folds empty fields
-        # name | link flags beyond RIDE's common ones | objects in link order | shmrt yes/no
-        echo "$p|$flags|$objs|$shm" > "$out/link.txt"
+        # name | link flags beyond RIDE's common ones | objects in link order | shmrt yes/no | COMDAT yes/no
+        # **ml64 has no syntax for COMDAT**, so a program whose assembly uses it - every
+        # cxx1i program, and MASM's own COMDAT test - goes to the box marked, and ml64 is
+        # not asked there: its refusal said nothing about this linker, run after run.
+        comdat=0
+        for o in $objs; do grep -qE 'COMDAT\(|ASSOCIATIVE\(' "$out/$o.asm" 2>/dev/null && comdat=1; done
+        echo "$p|$flags|$objs|$shm|$comdat" > "$out/link.txt"
         n=$((n+1))
     done
     echo "corpus.sh: $n programs compiled, $refused modules refused"
