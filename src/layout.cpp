@@ -571,9 +571,9 @@ bool Link::read_inputs()
      *  __acrt_initialize and __vcrt_initialize as weak externals whose fallbacks are the
      *  empty stubs in libcmt(ucrt_stubs.obj); the real ones are in libucrt and libvcruntime,
      *  which LIBCMT's own /DEFAULTLIB opens. Settled before those were open, the stubs won,
-     *  the CRT was never initialised, and the program died in ntdll before main - every shci
+     *  the CRT was never initialised, and the program died in ntdll before main - every shalimar
      *  program, whose link names only its object and shmrt-x86_64-windows.lib and gets the
-     *  CRT by directive. cc1i and cxx1i name the CRT libraries and never saw it. */
+     *  CRT by directive. c90 and cpp11 name the CRT libraries and never saw it. */
     for (;;) {
         if (!pull_until_settled(w, err)) return false;
         bool opened = false;
@@ -982,7 +982,7 @@ bool Link::sym_rva(int mod, int sym, u64 &rva)
 
 /*  .pdata holds one RUNTIME_FUNCTION per function, and the loader finds a function's by
  *  binary search - so the table is sorted by BeginAddress across every module, which the
- *  contributions' placement order is not once cxx1i's .text$x funclets sort after every
+ *  contributions' placement order is not once cpp11's .text$x funclets sort after every
  *  module's .text$mn (the review's L13: 713 of 1,815 entries out of order). The entries
  *  are gathered from the placed .pdata contributions after fix-up, sorted, and put back in
  *  the same slots. */

@@ -15,7 +15,7 @@ struct Tally {
 
 Tally tally;
 
-// The string lives here and not in main: cxx1i's x86_64-windows tables cannot yet hold a
+// The string lives here and not in main: cpp11's x86_64-windows tables cannot yet hold a
 // local with a destructor beside a try, and it names a type descriptor for a fundamental
 // type only, so the fault is thrown as an int.
 long ask(const char* line)
