@@ -1,6 +1,6 @@
 #!/bin/sh
 # The ratification corpus: every program under tests/corpus, taken through the two chains and
-# compared. The Mac compiles (cc1i, cxx1i, shci write the MASM assembly here, since they are
+# compared. The Mac compiles (c90, cpp11, shalimar write the MASM assembly here, since they are
 # Mac binaries); the Windows box assembles each module twice - ml64, and this project's masm -
 # and links each pair twice - link.exe on RIDE's exact line, and this linker built there by cl
 # from src/ - then runs all four images. tests/windows/corpus.cmd is the box's half; this half
@@ -13,15 +13,15 @@
 #   sh tests/corpus.sh report       report from what build/corpus already holds
 #
 # Each tests/corpus/NN-name/manifest names its modules in link order; the extension says which
-# compiler: .c cc1i, .cpp cxx1i, .shl/.shm shci (the first only - shci compiles the files beside
+# compiler: .c c90, .cpp cpp11, .shl/.shm shalimar (the first only - shalimar compiles the files beside
 # it into the same assembly), .asm as written (MASM's own corpus). A program with a .cpp links
-# with cxx1i's /stack:8388608; one with Shalimar in it links RIDE's shmrt-x86_64-windows.lib.
+# with cpp11's /stack:8388608; one with Shalimar in it links RIDE's shmrt-x86_64-windows.lib.
 set -u
 cd "$(dirname "$0")/.." || exit 1
 BIN=$(cd "${BIN:-../RIDE/bin}" && pwd)
-CC1I=${CC1I:-$BIN/cc1i.exe}; CXX1I=${CXX1I:-$BIN/cxx1i.exe}; SHCI=${SHCI:-$BIN/shci.exe}
+CC1I=${CC1I:-$BIN/c90.exe}; CXX1I=${CXX1I:-$BIN/cpp11.exe}; SHCI=${SHCI:-$BIN/shalimar.exe}
 # Optimization flags for each compiler, so a corpus run can judge an optimizer
-# end to end: cc1i's output assembled by this project's masm, linked by this
+# end to end: c90's output assembled by this project's masm, linked by this
 # linker, and run. Empty by default, which is -O0 and what the ledger records.
 CC1FLAGS=${CC1FLAGS:-}; CXX1FLAGS=${CXX1FLAGS:-}; SHCFLAGS=${SHCFLAGS:-}
 BOX=${BOX:-windows}
@@ -42,7 +42,7 @@ compile() {
             *.c)   "$CC1I" $CC1FLAGS -S -arch x86_64-windows -masm=masm -I "$d" "$d/$m" -o "$out/$b.asm" 2> "$out/$b.cc.err" < /dev/null || { echo "REFUSED $p/$m: $(grep -v '©' "$out/$b.cc.err" | head -1)"; refused=$((refused+1)); } ;;
             *.cpp) cpp=1; "$CXX1I" $CXX1FLAGS -arch x86_64-windows -masm=masm -S "$d/$m" -o "$out/$b.asm" 2> "$out/$b.cc.err" < /dev/null || { echo "REFUSED $p/$m: $(grep -v '©' "$out/$b.cc.err" | head -1)"; refused=$((refused+1)); } ;;
             *.shl|*.shm)
-                   [ $shm = 1 ] && continue    # shci took the rest from beside the first
+                   [ $shm = 1 ] && continue    # shalimar took the rest from beside the first
                    shm=1; ( cd "$d" && "$SHCI" $SHCFLAGS --target=x86_64-windows -S "$m" -o "$OLDPWD/$out/$b.asm" ) 2> "$out/$b.cc.err" < /dev/null || { echo "REFUSED $p/$m: $(grep -v '©' "$out/$b.cc.err" | head -1)"; refused=$((refused+1)); } ;;
             *.asm) cp "$d/$m" "$out/$b.asm" ;;
             esac
@@ -51,7 +51,7 @@ compile() {
         flags="-"; [ $cpp = 1 ] && flags="/stack:8388608"     # "-" for none: cmd's for /f folds empty fields
         # name | link flags beyond RIDE's common ones | objects in link order | shmrt yes/no | COMDAT yes/no
         # **ml64 has no syntax for COMDAT**, so a program whose assembly uses it - every
-        # cxx1i program, and MASM's own COMDAT test - goes to the box marked, and ml64 is
+        # cpp11 program, and MASM's own COMDAT test - goes to the box marked, and ml64 is
         # not asked there: its refusal said nothing about this linker, run after run.
         comdat=0
         for o in $objs; do grep -qE 'COMDAT\(|ASSOCIATIVE\(' "$out/$o.asm" 2>/dev/null && comdat=1; done

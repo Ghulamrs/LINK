@@ -7,7 +7,7 @@ For every program: how each of the legs fared - the assembler (ml64 / masm), lin
 two sets of objects, this linker on the two sets, and this linker with the libraries by full
 path - whether the image equals the oracle's byte for byte (or how many bytes differ and where,
 via pediff.py), and whether it ran to the same output and exit code. The oracle is ml64 +
-link.exe; where ml64 refused a module (it has no syntax for cxx1i's COMDAT clauses) the oracle
+link.exe; where ml64 refused a module (it has no syntax for cpp11's COMDAT clauses) the oracle
 is masm + link.exe and the table says so. Refusals are grouped by their first line at the end,
 each with the count of programs it stops."""
 import os, re, sys, collections
