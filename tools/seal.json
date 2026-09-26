@@ -1,0 +1,2 @@
+{"name": "link", "version": "1.0", "banner": "©2026 G. R. Akhtar - link, an x86-64 PE/COFF linker",
+ "dirs": ["src"], "files": ["Makefile", "CMakeLists.txt", "link.vcxproj"]}
