@@ -23,9 +23,12 @@ for %%f in (%PROBES%\*.asm) do (
 )
 
 rem  p10 takes an object the project's own assembler wrote - one with no @comp.id - so that the
-rem  Rich header's count of entries comes out odd. RIDE's masm is used, or MASMEXE names one.
-set MASM=C:\Program Files\RIDE 4.0\bin\masm.exe
-if not "%MASMEXE%"=="" set MASM=%MASMEXE%
+rem  Rich header's count of entries comes out odd. MASMEXE names one, else the first found of
+rem  the installed RIDE 4.5, the trees to-windows-both.sh and to-windows.sh build, and PATH.
+set MASM=%MASMEXE%
+if "%MASM%"=="" for %%m in ("C:\Program Files\RIDE 4.5\bin\masm.exe" "C:\ride-verify\win\RIDE-4.5\bin\masm.exe" "C:\Users\GRA\source\RIDE-4.5\bin\masm.exe") do if "!MASM!"=="" if exist %%m set MASM=%%~m
+if "%MASM%"=="" for /f "delims=" %%m in ('where masm.exe 2^>nul') do if "!MASM!"=="" set MASM=%%m
+echo masm: %MASM%
 rem  p16 wants a second unmarked object, so that the Rich header has an unmarked count of two.
 for %%u in (p10-unmarked p16-rich-pair) do (
     if exist "%MASM%" ("%MASM%" /c /nologo /Fo %%u-my.obj %PROBES%\%%u.asm > %%u-my.masm 2>&1 || (echo MASM-FAILED %%u & set fail=1)) else (echo NO-MASM %%u)

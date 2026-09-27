@@ -15,7 +15,9 @@ COPYFILE_DISABLE=1 tar -C . --no-xattrs -czf "$T/tree.tgz" tests || exit 1
 W=$(echo "$ROOT" | sed 's|/|\\|g')        # the same place in cmd's spelling
 ssh -n -o BatchMode=yes "$BOX" "if not exist $W mkdir $W" > /dev/null || exit 1
 scp -q "$T/tree.tgz" "$BOX:$ROOT/tree.tgz" || exit 1
-perl -e 'alarm 1800; exec @ARGV' ssh -n -o BatchMode=yes "$BOX" "cd /d $W & tar xzf tree.tgz & $W\\tests\\windows\\probe.cmd $W"
+# MASMEXE, when set here, names the box's masm for p10 and p16; probe.cmd looks for one otherwise
+M=""; [ -n "${MASMEXE:-}" ] && M="set MASMEXE=$MASMEXE& "
+perl -e 'alarm 1800; exec @ARGV' ssh -n -o BatchMode=yes "$BOX" "cd /d $W & tar xzf tree.tgz & $M$W\\tests\\windows\\probe.cmd $W"
 rc=$?
 scp -q "$BOX:$ROOT/build/probe/*" "$T/" || exit 1
 [ $rc = 0 ] || echo "probes.sh: the box reported a failure - read the .ml64, .link and .lib.log files"
