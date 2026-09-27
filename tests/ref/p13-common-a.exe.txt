@@ -8,7 +8,7 @@ File Type: EXECUTABLE IMAGE
 FILE HEADER VALUES
             8664 machine (x64)
                3 number of sections
-        6AB02657 time date stamp Sun Sep 20 23:30:47 2026
+        6AB9361D time date stamp Sun Sep 27 20:28:29 2026
                0 file pointer to symbol table
                0 number of symbols
               F0 size of optional header
@@ -96,7 +96,7 @@ SECTION HEADER #2
          Read Only
 
 RAW DATA #2
-  0000000140002000: 00 00 00 00 57 26 B0 6A 00 00 00 00 0D 00 00 00  ....W&°j........
+  0000000140002000: 00 00 00 00 1D 36 B9 6A 00 00 00 00 0D 00 00 00  .....6¹j........
   0000000140002010: 68 00 00 00 34 20 00 00 34 06 00 00 18 00 00 00  h...4 ..4.......
   0000000140002020: 00 80 00 80 00 00 00 00 00 00 00 00 00 00 00 00  ................
   0000000140002030: 00 00 00 00 00 00 00 00 00 10 00 00 07 00 00 00  ................
@@ -112,7 +112,7 @@ RAW DATA #2
 
         Time Type        Size      RVA  Pointer
     -------- ------- -------- -------- --------
-    6AB02657 coffgrp       68 00002034      634
+    6AB9361D coffgrp       68 00002034      634
 
 SECTION HEADER #3
    .data name

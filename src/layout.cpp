@@ -758,7 +758,7 @@ static void add_linker_module(Link &lk, size_t ncontrib_names)
 {
     Module m;
     m.name = "*linker*";
-    m.compid = 0x0102899Cu;        /* link 14.44.35228, as the reference images record it */
+    m.compid = 0x0102899Du;        /* link 14.44.35229, as the reference images record it */
     m.from_archive = false;
     m.secs.resize(3);
     for (int i = 0; i < 3; i++) {

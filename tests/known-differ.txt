@@ -6,3 +6,6 @@ p10-rich-odd 105    ; the e_lfanew reserve and the Rich entry order
 p12-alt      245    ; the e_lfanew reserve, and an alternate name spelt $fo$
 p13-common-a 121    ; the e_lfanew reserve
 p13-common-b 124    ; the e_lfanew reserve
+p14-threedll 191    ; the e_lfanew reserve and the import order of three DLLs
+p15-reorder    9    ; the import order: the set's, not the references'
+p16-rich-pair 110   ; the e_lfanew reserve and the Rich entry order

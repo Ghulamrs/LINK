@@ -3,7 +3,8 @@
 Read off the probe bed, not out of the manual. Every number here came from
 `build/probe/*.exe.txt` and the images beside them; the images and their dumps are checked in
 under `tests/ref` so a later change can be held to them. Tools: ml64 and link 14.44.35228.0,
-Windows box, 2026-09-19. All ten links were silent and every image ran with the return code its
+Windows box, 2026-09-19; re-based on 14.44.35229.0 on 2026-09-27, when p14-p16 were first run -
+the ids below read 899D for 899C since then, and the sixteen earlier probes gave the same results. All ten links were silent and every image ran with the return code its
 probe was written to give.
 
 ## The floor of an image (p01)
