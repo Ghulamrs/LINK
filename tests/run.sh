@@ -28,6 +28,11 @@ mkdir -p "$OUT" || exit 1
 
 fail=0; skip=0; pass=0
 
+# A probe listed in tests/known-differ.txt may differ by up to the bytes written beside it: a
+# difference docs/known.md explains. More bytes, or an unlisted probe, still fails the bed.
+known_bytes() { sed 's/;.*//' tests/known-differ.txt 2>/dev/null | awk -v n="$1" '$1 == n { print $2 }'; }
+known=0
+
 one() {
     name=$1; flags=$2; objs=$3
     args=""; missing=""
@@ -56,11 +61,22 @@ one() {
     if cmp -s "$OUT/$name.exe" "$REF/$name.exe"; then
         printf '%-18s ok    %s bytes\n' "$name" "$(wc -c < "$REF/$name.exe" | tr -d ' ')"
         pass=$((pass+1))
+        if [ -n "$(known_bytes "$name")" ]; then
+            printf '%-18s       matches now - take it off tests/known-differ.txt\n' "$name"; fail=$((fail+1))
+        fi
     else
         n=$(cmp -l "$OUT/$name.exe" "$REF/$name.exe" 2>/dev/null | wc -l | tr -d ' ')
-        printf '%-18s DIFF  %s bytes differ (first: %s)\n' "$name" "$n" \
+        k=$(known_bytes "$name")
+        label=DIFF; [ -n "$k" ] && [ "$n" -le "$k" ] && label=KNOWN
+        printf '%-18s %-5s %s bytes differ (first: %s)\n' "$name" "$label" "$n" \
                "$(cmp "$OUT/$name.exe" "$REF/$name.exe" 2>&1 | sed 's/.*differ: //')"
-        fail=$((fail+1))
+        if [ -n "$k" ] && [ "$n" -le "$k" ]; then
+            [ "$n" -lt "$k" ] && printf '%-18s       known, and %s bytes fewer than the %s listed - lower it\n' "$name" $((k-n)) "$k"
+            known=$((known+1))
+        else
+            [ -n "$k" ] && printf '%-18s       listed as known at %s bytes, and it is now %s\n' "$name" "$k" "$n"
+            fail=$((fail+1))
+        fi
     fi
 }
 
@@ -74,7 +90,7 @@ while IFS='|' read -r n f o; do
 done < "$OUT/links"
 
 echo "---"
-echo "run.sh: $pass matched, $fail differed, $skip skipped"
+echo "run.sh: $pass matched, $known known, $fail differed, $skip skipped"
 [ "$fail" -gt 0 ] && exit 1
 [ "$skip" -gt 0 ] && exit 2
 exit 0

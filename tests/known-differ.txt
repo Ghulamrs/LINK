@@ -1,0 +1,8 @@
+; Probes the bed lets differ, by at most the bytes given - each difference is in docs/known.md.
+; run.sh fails a probe that differs by more, and one listed here that matches: take it off then.
+p03-imports    9    ; ILT and IAT order for one DLL
+p09-twodll   159    ; the e_lfanew reserve and the IAT order for two DLLs
+p10-rich-odd 105    ; the e_lfanew reserve and the Rich entry order
+p12-alt      245    ; the e_lfanew reserve, and an alternate name spelt $fo$
+p13-common-a 121    ; the e_lfanew reserve
+p13-common-b 124    ; the e_lfanew reserve
