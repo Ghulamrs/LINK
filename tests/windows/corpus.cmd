@@ -13,17 +13,23 @@ rem  byte for byte, this linker with a fixed /timestamp. Each image that exists 
 rem  output and exit code kept. This linker is built here first, by cl from src\, with the
 rem  house flags. Usage: corpus.cmd <tree root>
 setlocal enabledelayedexpansion
+if "%~1"==":shard" goto :shard
 if "%~1"=="" (echo corpus.cmd: needs the tree root & exit /b 2)
 call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat" >nul
 if errorlevel 1 (echo corpus.cmd: no vcvars64 & exit /b 1)
 cd /d "%~1"
 set ROOT=%CD%
-set MASM=C:\Program Files\RIDE 4.0\bin\masm.exe
-if not "%MASMEXE%"=="" set MASM=%MASMEXE%
+rem  MASMEXE and SHMLIB name them, else the first found of the installed RIDE 4.5 and the trees
+rem  to-windows-both.sh and to-windows.sh build - the search probe.cmd makes.
+set MASM=%MASMEXE%
+set SHM=%SHMLIB%
+for %%r in ("C:\Program Files\RIDE 4.5\bin" "C:\ride-verify\win\RIDE-4.5\bin" "C:\Users\GRA\source\RIDE-4.5\bin") do (
+    if "!MASM!"=="" if exist "%%~r\masm.exe" set MASM=%%~r\masm.exe
+    if "!SHM!"=="" if exist "%%~r\lib\shmrt-x86_64-windows.lib" set SHM=%%~r\lib\shmrt-x86_64-windows.lib
+)
 if not exist "%MASM%" (echo corpus.cmd: no masm at %MASM% & exit /b 1)
+echo masm: %MASM%
 set LIBS=libcmt.lib libucrt.lib libvcruntime.lib kernel32.lib legacy_stdio_definitions.lib
-set SHM=C:\Program Files\RIDE 4.0\bin\lib\shmrt-x86_64-windows.lib
-if not "%SHMLIB%"=="" set SHM=%SHMLIB%
 set STAMP=6AB006D2
 rem  the same libraries by full path, for the leg that measures what comes after LIB search
 set FULL=
@@ -32,7 +38,7 @@ echo libraries: !FULL!
 
 rem  this linker, built by cl with the house flags: a build that is not clean is a finding
 if not exist build\corpus\cl mkdir build\corpus\cl
-cl /nologo /std:c++14 /W4 /WX /permissive- /O2 /EHsc /D_CRT_SECURE_NO_WARNINGS /Fo:build\corpus\cl\ /Fe:build\corpus\link-cl.exe src\*.cpp > build\corpus\cl-build.log 2>&1
+cl /nologo /MP /std:c++14 /W4 /WX /permissive- /O2 /EHsc /D_CRT_SECURE_NO_WARNINGS /Fo:build\corpus\cl\ /Fe:build\corpus\link-cl.exe src\*.cpp > build\corpus\cl-build.log 2>&1
 if errorlevel 1 (echo CL-BUILD-FAILED & type build\corpus\cl-build.log & exit /b 1)
 set OURS=%ROOT%\build\corpus\link-cl.exe
 echo built %OURS%
@@ -41,47 +47,65 @@ link 2>&1 | findstr Version >> build\corpus\versions.txt
 cl 2>&1 | findstr Version >> build\corpus\versions.txt
 dir "%MASM%" | findstr masm >> build\corpus\versions.txt
 
-for /d %%d in (build\corpus\*) do if exist "%ROOT%\%%d\link.txt" (
-    cd /d "%ROOT%\%%d"
-    set name=%%~nd
-    if not exist ml mkdir ml
-    if not exist my mkdir my
-    set comdat=0
-    for /f "usebackq tokens=1,2,3,4,5 delims=|" %%a in ("link.txt") do (
-        set flags=%%b
-        set objs=%%c
-        set shm=%%d
-        set comdat=%%e
-    )
-    if "!comdat!"=="" set comdat=0
-    rem  ml64 has no syntax for COMDAT: a program that uses it is not ml64's to assemble.
-    if "!comdat!"=="1" echo ML64-NA !name! uses COMDAT, which ml64 has no syntax for
-    if "!flags!"=="-" set flags=
-    set mlobjs=
-    set myobjs=
-    set asmfail=0
-    for %%m in (!objs!) do (
-        if not "!comdat!"=="1" ml64 /nologo /c /Fo ml\%%m.obj %%m.asm > ml\%%m.log 2>&1 || (echo ML64-REFUSED !name! %%m & set asmfail=1)
-        "%MASM%" /c /nologo /Fo my\%%m.obj %%m.asm > my\%%m.log 2>&1 || (echo MASM-REFUSED !name! %%m & set asmfail=1)
-        set mlobjs=!mlobjs! ml\%%m.obj
-        set myobjs=!myobjs! my\%%m.obj
-    )
-    set extra=
-    if "!shm!"=="1" set extra="%SHM%"
-    if not "!comdat!"=="1" link /nologo /Brepro /subsystem:console !flags! /out:ml-link.exe /map:ml-link.map !mlobjs! !extra! %LIBS% > ml-link.log 2>&1 && (echo LINKED !name! ml-link) || (echo REFUSED !name! ml-link)
-    link /nologo /Brepro /subsystem:console !flags! /out:my-link.exe /map:my-link.map !myobjs! !extra! %LIBS% > my-link.log 2>&1 && (echo LINKED !name! my-link) || (echo REFUSED !name! my-link)
-    if not "!comdat!"=="1" "%OURS%" /nologo /subsystem:console !flags! /timestamp:%STAMP% /out:ml-ours.exe !mlobjs! !extra! %LIBS% > ml-ours.log 2>&1 && (echo LINKED !name! ml-ours) || (echo REFUSED !name! ml-ours)
-    "%OURS%" /nologo /subsystem:console !flags! /timestamp:%STAMP% /out:my-ours.exe !myobjs! !extra! %LIBS% > my-ours.log 2>&1 && (echo LINKED !name! my-ours) || (echo REFUSED !name! my-ours)
-    if not "!comdat!"=="1" "%OURS%" /nologo /subsystem:console /timestamp:%STAMP% /out:ml-full.exe !mlobjs! !extra! !FULL! > ml-full.log 2>&1 && (echo LINKED !name! ml-full) || (echo REFUSED !name! ml-full)
-    "%OURS%" /nologo /subsystem:console /timestamp:%STAMP% /out:my-full.exe !myobjs! !extra! !FULL! > my-full.log 2>&1 && (echo LINKED !name! my-full) || (echo REFUSED !name! my-full)
-    for %%x in (ml-link my-link ml-ours my-ours ml-full my-full) do (
-        if exist %%x.exe (
-            %%x.exe < nul > %%x.out 2>&1
-            echo rc=!errorlevel! >> %%x.out
-            dumpbin /nologo /headers %%x.exe > %%x.hdr 2>&1
-        )
-    )
-)
+rem  The programs are sharded six ways with par.cmd: each shard takes every sixth and does the whole
+rem  of it - both assemblers and all six links - so the oracle's legs and this linker's run at once.
+call "%~dp0par.cmd" 6 "%~f0" %ROOT%
 cd /d "%ROOT%"
 tar czf results.tgz --exclude=cl --exclude=*.asm --exclude=tree.tgz build/corpus
 echo CORPUS-DONE
+exit /b 0
+
+rem  One shard: every Nth program under build\corpus. The parent's variables arrive in the
+rem  environment - and names are case-insensitive, so :prog's own flag is wantshm and not shm.
+:shard
+set K=%~2
+set N=%~3
+set /a I=0
+for /d %%p in ("%ROOT%\build\corpus\*") do if exist "%%p\link.txt" (
+    set /a I+=1, M=I %% N + 1
+    if !M!==!K! call :prog "build\corpus\%%~nxp"
+)
+exit /b 0
+
+:prog
+cd /d "%ROOT%\%~1"
+set name=%~n1
+if not exist ml mkdir ml
+if not exist my mkdir my
+set comdat=0
+for /f "usebackq tokens=1,2,3,4,5 delims=|" %%a in ("link.txt") do (
+    set flags=%%b
+    set objs=%%c
+    set wantshm=%%d
+    set comdat=%%e
+)
+if "!comdat!"=="" set comdat=0
+rem  ml64 has no syntax for COMDAT: a program that uses it is not ml64's to assemble.
+if "!comdat!"=="1" echo ML64-NA !name! uses COMDAT, which ml64 has no syntax for
+if "!flags!"=="-" set flags=
+set mlobjs=
+set myobjs=
+set asmfail=0
+for %%m in (!objs!) do (
+    if not "!comdat!"=="1" ml64 /nologo /c /Fo ml\%%m.obj %%m.asm > ml\%%m.log 2>&1 || (echo ML64-REFUSED !name! %%m & set asmfail=1)
+    "%MASM%" /c /nologo /Fo my\%%m.obj %%m.asm > my\%%m.log 2>&1 || (echo MASM-REFUSED !name! %%m & set asmfail=1)
+    set mlobjs=!mlobjs! ml\%%m.obj
+    set myobjs=!myobjs! my\%%m.obj
+)
+set extra=
+if "!wantshm!"=="1" set extra="%SHM%"
+if not "!comdat!"=="1" link /nologo /Brepro /subsystem:console !flags! /out:ml-link.exe /map:ml-link.map !mlobjs! !extra! %LIBS% > ml-link.log 2>&1 && (echo LINKED !name! ml-link) || (echo REFUSED !name! ml-link)
+link /nologo /Brepro /subsystem:console !flags! /out:my-link.exe /map:my-link.map !myobjs! !extra! %LIBS% > my-link.log 2>&1 && (echo LINKED !name! my-link) || (echo REFUSED !name! my-link)
+if not "!comdat!"=="1" "%OURS%" /nologo /subsystem:console !flags! /timestamp:%STAMP% /out:ml-ours.exe !mlobjs! !extra! %LIBS% > ml-ours.log 2>&1 && (echo LINKED !name! ml-ours) || (echo REFUSED !name! ml-ours)
+"%OURS%" /nologo /subsystem:console !flags! /timestamp:%STAMP% /out:my-ours.exe !myobjs! !extra! %LIBS% > my-ours.log 2>&1 && (echo LINKED !name! my-ours) || (echo REFUSED !name! my-ours)
+if not "!comdat!"=="1" "%OURS%" /nologo /subsystem:console /timestamp:%STAMP% /out:ml-full.exe !mlobjs! !extra! !FULL! > ml-full.log 2>&1 && (echo LINKED !name! ml-full) || (echo REFUSED !name! ml-full)
+"%OURS%" /nologo /subsystem:console /timestamp:%STAMP% /out:my-full.exe !myobjs! !extra! !FULL! > my-full.log 2>&1 && (echo LINKED !name! my-full) || (echo REFUSED !name! my-full)
+for %%x in (ml-link my-link ml-ours my-ours ml-full my-full) do (
+    if exist %%x.exe (
+        %%x.exe < nul > %%x.out 2>&1
+        echo rc=!errorlevel! >> %%x.out
+        dumpbin /nologo /headers %%x.exe > %%x.hdr 2>&1
+    )
+)
+
+exit /b 0

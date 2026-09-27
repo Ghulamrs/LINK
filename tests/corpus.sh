@@ -63,7 +63,7 @@ compile() {
 
 ship() {
     find . -name "* [0-9].*" -delete
-    COPYFILE_DISABLE=1 tar -C . --no-xattrs -czf "$T/tree.tgz" src tests/windows/corpus.cmd "$T"/[0-9]* || exit 1
+    COPYFILE_DISABLE=1 tar -C . --no-xattrs -czf "$T/tree.tgz" src tests/windows/corpus.cmd tests/windows/par.cmd "$T"/[0-9]* || exit 1
     W=$(echo "$ROOT" | sed 's|/|\\|g')
     perl -e 'alarm 1800; exec @ARGV' ssh -n -o BatchMode=yes "$BOX" "if not exist $W mkdir $W" > /dev/null || exit 1
     scp -q "$T/tree.tgz" "$BOX:$ROOT/tree.tgz" || exit 1

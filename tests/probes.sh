@@ -17,7 +17,8 @@ ssh -n -o BatchMode=yes "$BOX" "if not exist $W mkdir $W" > /dev/null || exit 1
 scp -q "$T/tree.tgz" "$BOX:$ROOT/tree.tgz" || exit 1
 # MASMEXE, when set here, names the box's masm for p10 and p16; probe.cmd looks for one otherwise
 M=""; [ -n "${MASMEXE:-}" ] && M="set MASMEXE=$MASMEXE& "
-perl -e 'alarm 1800; exec @ARGV' ssh -n -o BatchMode=yes "$BOX" "cd /d $W & tar xzf tree.tgz & $M$W\\tests\\windows\\probe.cmd $W"
+# the old tests folder goes first: a probe the repo has since dropped would still be run
+perl -e 'alarm 1800; exec @ARGV' ssh -n -o BatchMode=yes "$BOX" "cd /d $W & (if exist tests rmdir /s /q tests) & tar xzf tree.tgz & $M$W\\tests\\windows\\probe.cmd $W"
 rc=$?
 scp -q "$BOX:$ROOT/build/probe/*" "$T/" || exit 1
 [ $rc = 0 ] || echo "probes.sh: the box reported a failure - read the .ml64, .link and .lib.log files"
