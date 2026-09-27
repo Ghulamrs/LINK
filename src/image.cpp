@@ -202,6 +202,18 @@ bool Link::write_image()
     u32 end = size_of_headers;
     for (size_t i = 0; i < outs.size(); i++) end += outs[i].raw_size;
     f.resize(end, 0);
+    /*  The gap between two contributions of a code section is int3, as link.exe writes it
+     *  (p10, p12, p13-b); the tail after the last one stays zero. */
+    for (size_t i = 0; i < outs.size(); i++) {
+        if (!(outs[i].flags & SCN_CNT_CODE)) continue;
+        u32 prev = 0;
+        for (size_t k = 0; k < outs[i].parts.size(); k++) {
+            const Contrib *c = all[outs[i].parts[k]];
+            if (c->data.empty() || !c->fileoff) continue;
+            if (prev && c->fileoff > prev && c->fileoff <= f.size()) memset(&f[prev], 0xCC, c->fileoff - prev);
+            prev = c->fileoff + (u32)c->data.size();
+        }
+    }
     for (size_t i = 0; i < all.size(); i++) {
         Contrib *c = all[i];
         if (c->data.empty()) continue;

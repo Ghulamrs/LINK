@@ -848,13 +848,14 @@ bool Link::lay_out()
                 }
                 n += 8 + ((last.size() + 1 + 3) & ~(size_t)3);
             }
-            /*  Sixteen zero bytes follow the record - but only in an image with no .data
-             *  section. p04 and p06 carry the same eleven names and the same record and
-             *  differ in exactly this; all thirteen reference images agree on it. What the
-             *  sixteen are for is still unread; that they are not there once .data exists
-             *  is what the bed says. */
+            /*  Sixteen zero bytes follow the record, but only where .data has no bytes in the
+             *  file: none at all (p04 against p06), or only uninitialised ones (p13-a's COMMON).
+             *  Sixteen of sixteen reference images agree; what the bytes are for is unread. */
             bool has_data = false;
-            for (size_t i = 0; i < outs.size(); i++) if (outs[i].name == ".data") has_data = true;
+            for (size_t i = 0; i < outs.size(); i++)
+                if (outs[i].name == ".data")
+                    for (size_t k = 0; k < outs[i].parts.size(); k++)
+                        if (!all[outs[i].parts[k]]->data.empty()) has_data = true;
             if (!has_data) n += 16;
             grp.size = (u32)n;
             grp.data.assign(n, 0);

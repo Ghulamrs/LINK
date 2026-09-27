@@ -50,13 +50,44 @@ reserves before it knows the entry list, and the bed has not shown what from.
 
 **The coffgrp contribution's tail: read off the bed.** link.exe's `.rdata$zzzdbg` run is the
 coffgrp record - 4 plus the entries, which is what the debug directory's size says - and, in an
-image with no `.data` section, sixteen zero bytes more. p01, p02, p06, p07, p10 and p11 have the
+image whose `.data` has no bytes in the file, sixteen zero bytes more. That was "no `.data`
+section" until p13-a, whose `.data` holds only a COMMON symbol - raw size 0 - and has the
+sixteen; all sixteen reference images agree with the corrected rule (2026-09-27). p01, p02, p06, p07, p10 and p11 have the
 sixteen; p03, p04, p05, p08 and p09 have none, and those are exactly the images with a `.data`
 section. p04 and p06 carry the same eleven names and the same 0xDC record and differ in just
 this, so the rule is not the record's size or the number of entries. What the sixteen bytes are
 *for* is still unread - nothing a loader consults is in them - but when they are written is not.
 This linker follows it; writing them always left every later address in `.rdata` sixteen bytes
 out in the five images that do not want them.
+
+**The gap between two code contributions is int3.** link.exe fills the space alignment leaves
+between contributions of a code section with `CC` and leaves the tail after the last one zero;
+this linker wrote zeros throughout until 2026-09-27. p10, p12 and p13-b were the images with such
+a gap, and each came down to its header bytes with it.
+
+**The e_lfanew reserve, with the three images added since.** p12, p13-a and p13-b make sixteen
+points and still no rule. Slack after `Rich`, then the entries (id x count):
+
+    p01, p11      0   103899C x1, 102899C x1
+    p12           0   103899C x2, 102899C x1
+    p13-a        16   103899C x1, 102899C x1          three sections, .data raw size 0
+    p13-b        24   103899C x2, 102899C x1          three sections
+    p02-p06      16   01018179 x3, 00010000 x1 (x3 in p03), 103899C x1, 102899C x1
+    p07, p08     24   as p02 with 103899C x2
+    p09           8   01018179 x5, 00010000 x10, 103899C x1, 102899C x1
+    p10          16   103899C x1, 00000000 x1, 102899C x1
+
+p13-a and p01 have the same entries and differ by sixteen, so the reserve is not a function of
+the entry list; p13 links against an archive whose member defines its COMMON symbol and is not
+pulled, which suggests a count taken over modules read rather than modules kept. The bed's
+remaining differences in p09, p10, p12 and p13 are this reserve, the Rich order above, p09's IAT
+order, and p12's alternate names below.
+
+**p12: an alternate name spelt `$fo$` is left unresolved.** `foo` has `/alternatename:foo=bar`
+and an archive member defining it: link.exe pulls the member and calls it, as this linker does.
+`mem_$fo$` has `/alternatename:mem_$fo$=mem_$fo_default$` and a member defining it too: link.exe
+takes neither - the member is not pulled, the default is not used, and the call is relocated to
+RVA 0. This linker takes the default. What link.exe reads the `$fo$` spelling as is not known.
 
 ## Not implemented
 
