@@ -4,9 +4,11 @@
     tools/seal write      write <name>-<version>.dat from what is on disk
     tools/seal check      verify every line of it, and say what moved
 
-What is sealed is named in tools/seal.json beside this script - the source
-directories, walked in full, and the build files beside them - and each file is
-sealed as it stands, comments and all. CRC32 answers "did this file change",
+What is sealed is the source code and nothing else (2026-10-05): the directories
+tools/seal.json names, and in them only the files that are code - C, C++,
+Objective-C++ and assembly, and the extension-less library headers under an
+include/ - each sealed as it stands, comments and all. No project, build file,
+script, document or resource: changing how a program is built is not changing it. CRC32 answers "did this file change",
 not "did somebody change it on purpose": a seal on a release, not a signature.
 The same script, byte for byte, serves every project of the workspace.
 """
@@ -44,6 +46,15 @@ def tracked():
     return set(got.decode().split("\0")) - {""}
 
 
+# What source code is, by extension; and an extension-less file under include/ (<vector>, <string>).
+SOURCE_EXT = {".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".inc", ".m", ".mm", ".s", ".asm"}
+
+
+def source(rel):
+    ext = os.path.splitext(rel)[1].lower()
+    return ext in SOURCE_EXT or (ext == "" and "/include/" in "/" + rel)
+
+
 def files():
     out = []
     for d in CONF["dirs"]:
@@ -52,7 +63,9 @@ def files():
             for n in sorted(names):
                 if n.startswith(".") or duplicate(n) or n.endswith((".exe", ".o", ".obj")):
                     continue
-                out.append(os.path.relpath(os.path.join(where, n), ROOT).replace(os.sep, "/"))
+                rel = os.path.relpath(os.path.join(where, n), ROOT).replace(os.sep, "/")
+                if source(rel):
+                    out.append(rel)
     for pattern in CONF.get("files", []):
         for n in sorted(os.listdir(ROOT)):
             if fnmatch.fnmatch(n, pattern) and os.path.isfile(os.path.join(ROOT, n)):

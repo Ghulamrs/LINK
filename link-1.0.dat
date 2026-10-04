@@ -1,11 +1,8 @@
 ©2026 G. R. Akhtar - link, an x86-64 PE/COFF linker
-Release seal, version 1.0, sealed 27-09-2026
+Release seal, version 1.0, sealed 05-10-2026
 Written by tools/seal; check it with `tools/seal check`.
-CRC32  size  file - 9 files, seal 588C5F1F
+CRC32  size  file - 6 files, seal E35FB5A3
 ------------------------------------------------------------------
-FCCBCD9F       287  CMakeLists.txt
-030E3AF2      1527  Makefile
-738C9200      2794  link.vcxproj
 0DBA49C6      8974  src/archive.cpp
 5E8C47C1      8298  src/coff.cpp
 C59B25B2     16293  src/image.cpp
@@ -13,4 +10,4 @@ C59B25B2     16293  src/image.cpp
 4D8735B7     12085  src/link.h
 D5C8880C      7937  src/main.cpp
 ------------------------------------------------------------------
-Sealed on 27-09-2026
+Sealed on 05-10-2026
