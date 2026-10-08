@@ -1,0 +1,15 @@
+cpp11's programs through this linker (review V7, 2026-10-08): objects with exception tables, throw
+records, RTTI and COMDAT data, which no ml64 probe can make. Each <module>.asm is
+
+    cpp11 -S -arch x86_64-windows -masm=masm <module>.cpp -o <module>.asm
+
+at C++Optimize branch review/f-windows - four of cpp11's tests/cases, and twofile-a/b.cpp here, two
+objects each defining the same inline function, vftable, RTTI, template static and throw records.
+tests/windows/cpp11.cmd (on the box: sh tests/cpp11.sh ships it) assembles them with the project's
+masm, links every program in programs.txt with link.exe and with this linker, runs both images and
+writes their outputs and pediff.py's summary; tests/cpp11.sh compares each run with <name>.expected.
+
+The first run of it (2026-10-08) found two faults in this linker, both fixed beside it: a SECREL was
+measured from the section holding the relocation rather than the target's, and from the TLS
+template's start for a thread-local; and no TLS directory was written. Every cpp11 `static` local
+with a constructor - _Init_thread_header reads libcmt's _Init_thread_epoch through both - faulted.

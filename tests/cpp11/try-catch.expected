@@ -1,0 +1,8 @@
+0: nothing thrown
+1: int 7
+2: double 2.5
+3: something else
+inner int 7
+1
+through inner: 2.5
+done
