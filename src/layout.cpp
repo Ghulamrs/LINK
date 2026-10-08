@@ -1011,6 +1011,15 @@ void Link::sort_pdata()
 
 bool Link::fix_up()
 {
+    /*  Where the TLS template starts: the first .tls contribution placed - .tls sorts before
+     *  .tls$..., and it is tlssup.obj's _tls_start. A SECREL into it is measured from there. */
+    u32 tls_lo = 0, tls_hi = 0;
+    for (size_t i = 0; i < all.size(); i++) {
+        const std::string &n = all[i]->name;
+        if (n.compare(0, 4, ".tls") != 0 || (n.size() > 4 && n[4] != '$')) continue;
+        if (tls_hi == 0 || all[i]->rva < tls_lo) tls_lo = all[i]->rva;
+        if (all[i]->rva + all[i]->size > tls_hi) tls_hi = all[i]->rva + all[i]->size;
+    }
     for (size_t i = 0; i < all.size(); i++) {
         Contrib *c = all[i];
         if (c->data.empty()) continue;
@@ -1079,9 +1088,18 @@ bool Link::fix_up()
             case REL_REL32_3: case REL_REL32_4: case REL_REL32_5:
                 wr32(p, (u32)(S + rd32(p) - (P + 4 + (rl.type - REL_REL32))));
                 break;
-            case REL_SECREL:
-                wr32(p, (u32)(S + rd32(p) - outs[c->out].rva));
+            case REL_SECREL: {
+                /*  From the start of the section the *target* is in, not the one holding the
+                 *  relocation; a thread-local from the TLS template's start, which is what
+                 *  link.exe writes (`mov r9d, 4` for libcmt's _Init_thread_epoch, 2026-10-08). */
+                u32 base = 0;
+                if (S >= tls_lo && S < tls_hi) base = tls_lo;
+                else
+                    for (size_t k = 0; k < outs.size(); k++)
+                        if (S >= outs[k].rva && S < (u64)outs[k].rva + outs[k].virt_size) { base = outs[k].rva; break; }
+                wr32(p, (u32)(S + rd32(p) - base));
                 break;
+            }
             case REL_SECTION: {
                 int oi = -1;
                 if (s.section > 0) oi = mods[c->module].secs[s.section - 1].out;
