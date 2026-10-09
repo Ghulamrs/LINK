@@ -1,0 +1,12 @@
+; Each line is one program: its name | the libraries on its link line | its modules, each a
+; cpp11 -S -arch x86_64-windows -masm=masm output beside this file, named in tests/cpp11/README.
+; The libraries are cpp11's own line; directive-crt names libcmt alone, so libucrt and libvcruntime
+; arrive only by its /DEFAULTLIB - the shape that crashed every Shalimar program before main until
+; 947f143 (the 09-23 corpus): the weak __acrt_initialize took ucrt_stubs' fallback.
+try-catch|libcmt.lib libcpmt.lib libucrt.lib libvcruntime.lib kernel32.lib legacy_stdio_definitions.lib|try-catch
+throw-class|libcmt.lib libcpmt.lib libucrt.lib libvcruntime.lib kernel32.lib legacy_stdio_definitions.lib|throw-class
+template-static-member-on-use|libcmt.lib libcpmt.lib libucrt.lib libvcruntime.lib kernel32.lib legacy_stdio_definitions.lib|template-static-member-on-use
+handler-exit-ms|libcmt.lib libcpmt.lib libucrt.lib libvcruntime.lib kernel32.lib legacy_stdio_definitions.lib|handler-exit-ms
+twofile|libcmt.lib libcpmt.lib libucrt.lib libvcruntime.lib kernel32.lib legacy_stdio_definitions.lib|twofile-a twofile-b
+directive-crt|libcmt.lib legacy_stdio_definitions.lib|try-catch
+static-local-constructor|libcmt.lib libcpmt.lib libucrt.lib libvcruntime.lib kernel32.lib legacy_stdio_definitions.lib|static-local-constructor

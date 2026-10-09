@@ -1,0 +1,12 @@
+S1
+S3
+4 5 6
+S100
+304
+S50
+-1 50 50
+~S1
+~S50
+~S103
+~S6
+LEDGER built=4 gone=4 live=0 double=0 phantom=0 over=0 lost=0

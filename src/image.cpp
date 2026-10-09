@@ -184,6 +184,18 @@ bool Link::write_image()
         }
         err.clear();
     }
+    /*  The TLS directory: the CRT's _tls_used (libcmt's tlssup.obj), an IMAGE_TLS_DIRECTORY64 of
+     *  0x28 bytes, as link.exe writes it. Without it the loader allocates no thread-local block,
+     *  and a `static` local with a constructor - _Init_thread_header reads the TLS epoch - faults
+     *  with 0xC0000005 (cpp11's static-local cases, 2026-10-08). */
+    {
+        std::map<std::string, std::pair<int, int> >::const_iterator it = resolved.find("_tls_used");
+        u64 tls;
+        if (it != resolved.end() && sym_rva(it->second.first, it->second.second, tls)) {
+            wr32(d + 9 * 8, (u32)tls); wr32(d + 9 * 8 + 4, 0x28);
+        }
+        err.clear();
+    }
     group(*this, ".idata$5", rva, size);
     if (size) { wr32(d + 12 * 8, rva); wr32(d + 12 * 8 + 4, size); }
 
