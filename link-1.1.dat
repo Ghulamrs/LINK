@@ -1,5 +1,5 @@
 ©2026 G. R. Akhtar - link, an x86-64 PE/COFF linker
-Release seal, version 1.1, sealed 09-10-2026
+Release seal, version 1.1, sealed 13-10-2026
 Written by tools/seal; check it with `tools/seal check`.
 CRC32  size  file - 6 files, seal DB133712
 ------------------------------------------------------------------
@@ -10,4 +10,4 @@ C03EFE84     16973  src/image.cpp
 4D8735B7     12085  src/link.h
 D5C8880C      7937  src/main.cpp
 ------------------------------------------------------------------
-Sealed on 09-10-2026
+Sealed on 13-10-2026
