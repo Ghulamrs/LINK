@@ -4,7 +4,7 @@
  * the argument type: a Shalimar array arrives as a `ShmArray *`, which is an
  * OPAQUE handle. This file never learns how an array is stored - it asks
  * shm_array_dim how long one is and shm_get_real what is in it, and that is
- * the whole of the contract. See ../../../Compiler-S/docs/ARRAY-ABI.md.
+ * the whole of the contract. See ../../../../Compiler-S/docs/ARRAY-ABI.md.
  *
  * Two rules that are easy to get wrong:
  *

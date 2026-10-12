@@ -18,7 +18,7 @@
 # with cpp11's /stack:8388608; one with Shalimar in it links RIDE's shmrt-x86_64-windows.lib.
 set -u
 cd "$(dirname "$0")/.." || exit 1
-BIN=$(cd "${BIN:-../RIDE/bin}" && pwd)
+BIN=$(cd "${BIN:-../../RIDE/bin}" && pwd)
 CC1I=${CC1I:-$BIN/c90.exe}; CXX1I=${CXX1I:-$BIN/cpp11.exe}; SHCI=${SHCI:-$BIN/shalimar.exe}
 # Optimization flags for each compiler, so a corpus run can judge an optimizer
 # end to end: c90's output assembled by this project's masm, linked by this
